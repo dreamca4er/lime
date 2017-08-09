@@ -1,13 +1,13 @@
-declare @delaydaysfrom int = null
-declare @delaydaysto int = null
-declare @transferfrom datetime2 = null
-declare @transferto datetime2 = null
-declare @recallfrom datetime2 = null
-declare @recallto datetime2 = null
-declare @isFraud bit = null
-declare @transfertype int = null
-declare @collectorid int = 1174
-declare @clientid nvarchar(max) = null
+--declare @delaydaysfrom int = null
+--declare @delaydaysto int = null
+--declare @transferfrom datetime2 = null
+--declare @transferto datetime2 = null
+--declare @recallfrom datetime2 = null
+--declare @recallto datetime2 = null
+--declare @isFraud bit = null
+--declare @transfertype int = null
+--declare @collectorid int = 1174
+--declare @clientid nvarchar(max) = null
 
 --Извлечем Id клиентов из строки
 declare @xml xml

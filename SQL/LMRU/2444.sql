@@ -1,3 +1,5 @@
+--declare @cred int = 37819;
+
 with nums as (
 select 1 as a union all
 select 1 as a union all
@@ -18,130 +20,195 @@ from nums n1
 cross join nums n2
 )
 
-,dates as (
 select
   dateadd(d, rn, '20170601') as dt
+into #dates
 from cj
-where dateadd(d, rn, '20170601') <= '20170714'
-)
+where dateadd(d, rn, '20170601') < '20170701'
 
- ,cte_credits as (
-select
+
+select distinct
+  cast(dch.DateCreated as date) as collectorDate,
   d.Id as debtorId,
   fu.Id as userId,
   fu.Lastname + ' ' + fu.Firstname + isnull(' ' + fu.Fathername, '') as fio,
   c.id as creditId,
   c.Period,
   cast(c.DateCreated as date) as creditStarted,
-  cast(dateadd(d, c.Period, c.DateCreated) as date) as creditFinalPre,
-  cast(csh.DateStarted as date) as creditFinished
-from DebtorCollectorHistory dch
-join Debtors d on d.Id = dch.DebtorId
-join Credits c on c.Id = d.CreditId
-join FrontendUsers fu on fu.Id = c.UserId
-left join CreditStatusHistory csh on csh.CreditId = c.id
-  and csh.Status = 2
-where dch.IsLatest = 1
-  and CollectorId in (select UserId
+  cast(dateadd(d, c.Period, c.DateCreated) as date) as creditFinalPre
+into #cte_creditsPre
+from dbo.DebtorCollectorHistory dch
+join dbo.Debtors d on d.Id = dch.DebtorId
+join dbo.Credits c on c.Id = d.CreditId
+join dbo.FrontendUsers fu on fu.Id = c.UserId
+where CollectorId in (select UserId
                       from CmsContent_LimeZaim.dbo.UserGroupLinks
                       where UserGroupId = 44)
-  and (csh.DateStarted is null or csh.DateStarted >= '20170601')
-)
+    and dch.DateCreated >= '20170601'
+    and dch.DateCreated < '20170701'
 
-,cte_Statuses as (
+
 select
-  csh.CreditId,
-  cast(csh.DateStarted as date) as overdueStarted,
-  cast(csh_next.DateStarted as date) as overdueFinished
-from CreditStatusHistory csh
-left join CreditStatusHistory csh_next on csh_next.CreditId = csh.CreditId
-  and csh_next.id > csh.id
-  and csh_next.Id = (select min(csh_next1.id)
-                     from CreditStatusHistory csh_next1
-                     where csh_next1.CreditId = csh_next.CreditId
-                       and csh_next1.status != 3
-                       and csh_next1.id > csh.id)
-where csh.CreditId in (select creditId from cte_credits)
-  and csh.DateStarted > dateadd(d, -4, '20170601')
-  and csh.Status = 3
+    csh.id
+    ,csh.CreditId
+    ,csh.Status
+    ,cast(csh.DateStarted as date) statusStart
+    ,row_number() over (partition by csh.CreditId order by csh.DateStarted) as rn
+into #cs
+from dbo.CreditStatusHistory csh
+where csh.CreditId in (select creditId from #cte_creditsPre)
+;
+
+with nextStatusPre as
+(
+    select *
+    from #cs cs
+    where exists (select 1 from #cs cs1
+                  where cs1.CreditId = cs.CreditId
+                     and cs1.rn = cs.rn - 1
+                     and cs1.Status != cs.status)
+      or cs.rn = 1
 )
 
-,cte_creditsStatuses as (
 select
-  c.*,
-  s.overdueStarted,
-  s.overdueFinished
-from cte_credits c
-join cte_Statuses s on s.creditid = c.creditid
+    nsp.*
+    ,cast(nextStatus.statusStart as date) as statusEnd
+into #creditStatuses
+from nextStatusPre nsp
+outer apply 
+(
+    select min(nsp1.id) as id
+    from nextStatusPre nsp1
+    where nsp1.CreditId = nsp.CreditId
+        and nsp1.id > nsp.id
+) nsp1
+left join nextStatusPre nextStatus on nextStatus.id = nsp1.id
+;
+
+with debt as 
+(
+    select
+        cs.creditid
+        ,cp.debtorid
+        ,cp.userid
+        ,cs.statusStart as overdueStart
+        ,cs.statusEnd as overdueEnd
+        ,cp.collectorDate
+        ,cb.Amount as amountDebt
+        ,cb.PercentAmount + cb.CommisionAmount + cb.PenaltyAmount + cb.LongPrice + cb.TransactionCosts as otherDebt
+    from #creditStatuses cs
+    inner join #cte_creditsPre cp on cp.CreditId = cs.CreditId
+        and datediff(d, cs.statusStart, cp.collectorDate) + 1 = 4
+        and (cs.statusEnd is null or statusEnd >= cp.collectorDate)
+    left join dbo.CreditBalances cb on cb.CreditId = cp.creditid
+        and cb.Date = dateadd(d, -1, cp.collectorDate)
+    where cs.status = 3
+--        and cs.creditid = @cred
 )
 
-,overdue as (
+,pays as 
+(
+    select
+        cp.CreditId
+        ,cast(cp.DateCreated as date) as paymentDate
+        ,cp.Amount as amountPaid
+        ,cp.PercentAmount
+        ,cp.PercentAmount + cp.CommissionAmount + cp.PenaltyAmount + cp.LongPrice + cp.TransactionCosts as otherPaid
+        ,row_number() over (partition by cp.CreditId order by cp.id desc) as rn
+    from dbo.CreditPayments cp
+    inner join dbo.Payments p on p.Id = cp.PaymentId
+        and p.Way != 6
+    where exists 
+        (
+            select 1 from debt
+            where debt.CreditId = cp.CreditId
+                and cp.DateCreated >= debt.collectorDate
+        )
+        and cp.DateCreated >= '20170601'
+        and cp.DateCreated < '20170701'
+)
+
+,debtAgg as 
+(
+    select
+        dates.dt
+        ,isnull(sum(debt.amountDebt), 0) as amountDebt
+        ,isnull(sum(debt.otherDebt), 0) as otherDebt
+    from #dates dates
+    left join debt on dates.dt = debt.collectorDate
+--        and creditid = @cred
+    group by dates.dt
+)
+
+,paymentsAgg as 
+(
+    select
+        d.dt
+        ,isnull(sum(p.amountPaid), 0) as amountPaid
+        ,isnull(sum(p.otherPaid), 0) as otherPaid
+    from #dates d
+    left join pays p on p.paymentDate = d.dt
+        and exists (select 1 from debt
+                    where debt.creditid = p.creditid
+                        and debt.collectordate <= p.paymentDate)
+--       and creditid = @cred
+    group by dt
+)
+
+
+select
+    da.dt as "Дата"
+    ,da.amountDebt as "Долг по телу"
+    ,da.otherDebt as "Прочий долг"
+    ,da.amountDebt + da.otherDebt as "Всего долг"
+    ,pa.amountPaid as "Оплаты по телу"
+    ,pa.otherPaid as "Прочие оплаты"
+    ,pa.amountPaid + pa.otherPaid as "Всего оплат"
+from debtAgg da
+left join paymentsAgg pa on pa.dt = da.dt
+
+union
+
 select 
-  *, 
-  datediff(d, cs.overdueStarted, d.dt) + 1 as overdueDays
-from dates d
-left join cte_creditsStatuses cs on datediff(d, cs.overdueStarted, d.dt) + 1 >= 4 + case when d.dt >= '20170701' then datediff(d, '20170701', d.dt) + 1 else 0 end
-  and datediff(d, cs.overdueStarted, d.dt) + 1 <= (4 + datediff(d, '20170601', d.dt))
-  and (overdueFinished is null or overdueFinished >= d.dt)
-)
+    null
+    ,ad.amountDebt
+    ,sum(cb.PercentAmount + cb.CommisionAmount + cb.PenaltyAmount + cb.LongPrice + cb.TransactionCosts) 
+    + sum(pay.percentPayments) as otherDebt
+    ,ad.amountDebt
+    + isnull(sum(cb.PercentAmount + cb.CommisionAmount + cb.PenaltyAmount + cb.LongPrice + cb.TransactionCosts), 0)
+    + sum(pay.percentPayments) as allDebt
+    ,null
+    ,null
+    ,null
+from (select sum(amountDebt) as amountDebt from debt) ad, dbo.CreditBalances cb
+outer apply 
+(
+    select isnull(sum(p.PercentAmount), 0) as percentPayments
+    from pays p
+    inner join dbo.Credits c on c.Id = p.CreditId
+    where p.creditid = cb.creditid
+        and p.paymentDate >= (select min(d1.collectordate) 
+                              from debt d1
+                              where d1.creditid = p.creditid)
+        and p.rn != case when c.DatePaid < '20170701' then 1 else 0 end
+    
+) pay
+where cb.CreditId in (select creditid from debt/* where debt.creditid = @cred*/)
+    and cb.id = (select max(cb1.id)
+                   from dbo.CreditBalances cb1
+                   where cb1.CreditId = cb.CreditId
+                       and cb1.date < '20170701'
+                       and cb1.Amount 
+                           + cb1.PercentAmount 
+                           + cb1.CommisionAmount 
+                           + cb1.PenaltyAmount 
+                           + cb1.LongPrice 
+                           + cb1.TransactionCosts > 0)
+group by ad.amountDebt
+order by "Дата"
 
-,payments as (
-select
-  CreditId,
-  cast(DateCreated as date) as date,
-  sum(Amount) as AmountPayed,
-  sum(PercentAmount) as PercentAmountpayed,
-  sum(CommissionAmount) as CommissionAmountpayed,
-  sum(PenaltyAmount) as PenaltyAmountPayed,
-  sum(LongPrice) as LongPricePayed,
-  sum(TransactionCosts) as TransactionCostsPayed
-from CreditPayments cp
-where CreditId in (select creditId from cte_credits)
-group by 
-  CreditId,
-  cast(DateCreated as date)
-)
+drop table #creditStatuses
+drop table #cs
+drop table #cte_creditsPre
+drop table #dates
 
-,preFin as (
-select 
-  o.*,
-  isnull(cb.Amount, 0) as amountDebt,
-  isnull(cb.PercentAmount, 0) as PercentAmountDebt,
-  isnull(cb.CommisionAmount, 0) as CommisionAmountDebt,
-  isnull(cb.PenaltyAmount, 0) as PenaltyAmountDebt,
-  isnull(cb.LongPrice, 0) as LongPriceDebt,
-  isnull(cb.TransactionCosts, 0) as TransactionCostsDebt,
-  isnull(p.AmountPayed, 0) as AmountPayed,
-  isnull(p.PercentAmountpayed, 0) as PercentAmountpayed,
-  isnull(p.CommissionAmountpayed, 0) as CommissionAmountpayed,
-  isnull(p.PenaltyAmountPayed, 0) as PenaltyAmountPayed,
-  isnull(p.LongPricePayed, 0) as LongPricePayed,
-  isnull(p.TransactionCostsPayed, 0) as TransactionCostsPayed
-from overdue o
-left join CreditBalances cb on cb.creditid = o.creditid
-  and o.dt = datediff(d, -1, cb.date)
-  and o.overdueDays = case when o.dt < '20170701' then 4
-                           else datediff(d, '20170701', o.dt) + 5
-                      end
-left join payments p on p.CreditId = o.CreditId
-  and p.date = o.dt
-)
-
-select
-  dt,
-  debtorId,
-  userId,
-  fio,
-  creditId,
-  Period,
-  creditStarted,
-  creditFinalPre,
-  creditFinished,
-  overdueStarted,
-  overdueFinished,
-  overdueDays,
-  amountDebt as bodyDebt,
-  PercentAmountDebt + CommisionAmountDebt + PenaltyAmountDebt + LongPriceDebt + TransactionCostsDebt as otherDebt,
-  AmountPayed as bodyPaid,
-  PercentAmountpayed + CommissionAmountpayed + PenaltyAmountPayed + LongPricePayed + TransactionCostsPayed as otherPaid
-from preFin
