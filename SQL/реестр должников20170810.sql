@@ -1,4 +1,4 @@
-declare @startDate date = '20170701', @endDate date = '20170801';
+--declare @startDate date = '20170701', @endDate date = '20170801';
 
 select 
     u.Id as 'Id',
