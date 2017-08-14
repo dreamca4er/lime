@@ -1,29 +1,50 @@
+/*
 declare 
     @d1 date = '20170601'
-    ,@d2 date = '20170701';
+    ,@d2 date = '20170701'
+    ,@creditNumberFrom int = null
+    ,@creditNumberTo int = null;
+*/
 
-with collectorAssign as
+select
+    c.id as creditid
+    ,row_number() over (partition by c.userid order by c.id) as rn
+into #credNum
+from dbo.Credits c
+where c.status not in (5, 8);
+
+select
+    min(dch.id) as collectorAssignId
+    ,dch.DateCreated as collectorDate
+    ,dch.debtorid
+    ,d.creditId
+    ,c.userId
+    ,dch.CollectorId
+    ,c.DatePaid
+into #collectorAssign
+from dbo.DebtorCollectorHistory dch
+inner join dbo.Debtors d on d.Id = dch.DebtorId
+inner join dbo.Credits c on c.Id = d.CreditId
+where dch.DateCreated >= @d1
+    and (c.DatePaid is null or c.DatePaid > dch.DateCreated)
+group by 
+    dch.DateCreated
+    ,d.creditId
+    ,dch.debtorid
+    ,c.userId
+    ,c.DatePaid
+    ,dch.CollectorId;
+
+with collectorAssign as 
 (
-    select
-        min(dch.id) as collectorAssignId
-        ,dch.DateCreated as collectorDate
-        ,d.creditId
-        ,c.userId
-        ,dch.CollectorId
-        ,c.DatePaid
-    from dbo.DebtorCollectorHistory dch
-    inner join dbo.Debtors d on d.Id = dch.DebtorId
-    inner join dbo.Credits c on c.Id = d.CreditId
-    where dch.DateCreated >= @d1
-        and (c.DatePaid is null or c.DatePaid > dch.DateCreated)
-    group by 
-        dch.DateCreated
-        ,d.creditId
-        ,c.userId
-        ,c.DatePaid
-        ,dch.CollectorId
+    select 
+        ca.*
+        ,cn.rn
+    from #collectorAssign ca
+    inner join #credNum cn on cn.creditid = ca.CreditId
+        and (cn.rn >= @creditNumberFrom or @creditNumberFrom is null)
+        and (cn.rn <= @creditNumberTo or @creditNumberTo is null)
 )
-
 
 ,collectorFirstAssign as 
 (
@@ -45,6 +66,7 @@ with collectorAssign as
         ,ca1.DatePaid
         ,ca1.userId
         ,ca1.CollectorId
+        ,ca1.debtorid
         ,ca1.collectorDate as collectorStart
         ,ca2.collectorDate as collectorEnd
         ,cb.Amount as AmountDebt
@@ -151,6 +173,13 @@ with collectorAssign as
         and (cp.DateCreated < cse.collectorEnd or cse.collectorEnd is null)
         and cast(cp.DateCreated as date) <= dateadd(d, 30, cse.collectorStart)
     where cp.creditid in (select creditid from collectorStartEnd)
+      and (
+            @withActivity = 1
+                and exists (select 1 from dbo.DebtorInteractionHistory dih
+                            where dih.DebtorId = cse.debtorid
+                                and dateadd(hh, 3, dih.TimestampUtc) < cp.DateCreated)
+            or @withActivity = 0
+          )
 )
 
 ,neededPays as 
@@ -174,3 +203,8 @@ from neededAmountDebtValue nadv
 left join neededPercentDebtValue npdv on npdv.collectorid = nadv.collectorid
 left join neededPays np on np.collectorid =  nadv.collectorid
 left join CmsContent_LimeZaim.dbo.users u on u.userid = nadv.collectorid
+where u.userid in (@collector)
+order by u.username
+
+drop table #credNum;
+drop table #collectorAssign;
