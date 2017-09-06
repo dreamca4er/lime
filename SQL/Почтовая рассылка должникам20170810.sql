@@ -1,7 +1,6 @@
 /****** Script for SelectTopNRows command from SSMS  ******/
 --declare @NumberDays as int
 --set @NumberDays = 30
-
 select
     isnull(fu.Lastname,'') + ' ' + isnull(fu.Firstname,'') + ' ' + isnull(fu.Fathername,'') as N'ิศฮ'
 
