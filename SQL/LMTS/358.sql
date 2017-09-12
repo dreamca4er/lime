@@ -39,8 +39,17 @@ select
     ,case 
         when collectorDisAssignBy = 1 or activeStart < collectorAssignEnd or collectorAssignEnd is null 
         then N'Авто'
+        when isnull(activeStart, collectorAssignEnd) is null
+        then null
         else N'Вручную'
     end as disassignedBy
+    ,case 
+        when activeStart < collectorAssignEnd or collectorAssignEnd is null and activeStart is not null
+        then N'Дата перехода в статус "Активный"'
+        when isnull(activeStart, collectorAssignEnd) is null
+        then null
+        else N'Дата назначения на другого коллектора'
+    end as collectorAssignEnd
 from dch
 where cast(collectorAssignStart as date) between '20170907' and '20170908'
     or cast(collectorAssignEnd as date) between '20170907' and '20170908'
