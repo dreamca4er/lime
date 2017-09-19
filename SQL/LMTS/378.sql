@@ -1,6 +1,20 @@
 declare
     @dateFrom date = '20170802'
     ,@dateTo date = '20170901'
+    ,@collector int = case 
+                        when exists (
+                                        select 1 from dbo.Tariffs t
+                                        where t.id = 2
+                                            and t.Name = 'Lime'
+                                      )
+                        then 1174
+                        when exists (
+                                        select 1 from dbo.Tariffs t
+                                        where t.id = 2
+                                            and t.Name = 'Konga'
+                                      )
+                        then 2230
+                      end
 ;
 
 with creditsCte as 
@@ -13,7 +27,8 @@ with creditsCte as
     inner join dbo.Debtors d on d.id = dch.DebtorId
     inner join dbo.Credits c on c.id = d.CreditId
     where cast(dch.DateCreated as date) = @dateFrom
-        and dch.CollectorId = 1174
+        and dch.CollectorId = @collector
+                                
 )
 
 ,lcu as 
