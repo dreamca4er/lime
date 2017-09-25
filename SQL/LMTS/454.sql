@@ -49,7 +49,7 @@ select
 from creditsCte cc
 inner join dbo.CreditPayments cp on cp.CreditId = cc.creditid
     and cast(cp.DateCreated as date) >= @payFrom
-    and cast(cp.DateCreated as date) < @payTo
+    and cast(cp.DateCreated as date) <= @payTo
     and not exists (
                     select 1 from dbo.Payments p
                     where p.Id = cp.PaymentId
