@@ -101,6 +101,39 @@ with users as
         ,transferDateFrom as dateFrom
         ,transferDateTo as dateTo
         ,collector
+        ,case 
+            when collector != 'everest'
+            then 'transfer1'
+            else 'transfer2'
+        end as tableName
+        ,case 
+            when collector = 'prima'
+            then N'бшохяйю хг пееярпю днцнбнпнб нр #dt й юцемряйнлс днцнбнпс ╧070416 НР 07.04.2016'
+            when collector = 'everest'
+            then N'бшохяйю хг пееярпю днцнбнпнб нр #dt й юцемряйнлс днцнбнпс ╧ 004 НР 03 НЙРЪАПЪ 2016 Ц.'
+            when collector = 'creditExpress'
+            then N'бшохяйю хг пееярпю днцнбнпнб нр #dt й юцемряйнлс днцнбнпс ╧1 НР 23.03.2017'
+            when collector = 'bars'
+                and transferDateTo <= '20161231'
+            then N'бшохяйю хг пееярпю днцнбнпнб нр #dt й юцемряйнлс днцнбнпс ╧юяд-001 НР 28.11.2014'
+            when collector = 'bars'
+                and transferDateFrom > '20161231'
+            then N'бшохяйю хг пееярпю днцнбнпнб нр #dt й юцемряйнлс днцнбнпс ╧004 НР 28.11.2014'
+        end as tableHeader
+        ,case 
+            when collector != 'bars'
+                and transferDateTo <= '20170112'
+            then 'mfo'
+            when collector != 'bars'
+                and transferDateFrom > '20170112'
+            then 'mfk'
+            when collector = 'bars'
+                and transferDateTo <= '20170112'
+            then 'mfo_bars_asd'
+            when collector = 'bars'
+                and transferDateFrom > '20170112'
+            then 'mfk_bars_ooo'
+        end as stamp
     from dates
 
     union
@@ -111,6 +144,39 @@ with users as
         ,returnDateFrom
         ,returnDateTo
         ,collector
+        ,case 
+            when collector != 'bars'
+            then 'return1'
+            else 'return2'
+        end as tableName
+        ,case 
+            when collector = 'prima'
+            then N'бшохяйю хг пееярпю бнгбпюрю днцнбнпнб нр #dt й юцемряйнлс днцнбнпс ╧070416 НР 07.04.2016'
+            when collector = 'everest'
+            then N'бшохяйю хг пееярпю бнгбпюрю днцнбнпнб нр #dt й юцемряйнлс днцнбнпс ╧ 004 НР 03 НЙРЪАПЪ 2016 Ц.'
+            when collector = 'creditExpress'
+            then N'бшохяйю хг пееярпю бнгбпюрю днцнбнпнб нр #dt й юцемряйнлс днцнбнпс ╧1 НР 23.03.2017'
+            when collector = 'bars'
+                and returnDateTo <= '20161231'
+            then N'бшохяйю хг пееярпю бнгбпюрю днцнбнпнб нр #dt й юцемряйнлс днцнбнпс ╧юяд-001 НР 28.11.2014'
+            when collector = 'bars'
+                and returnDateFrom > '20161231'
+            then N'бшохяйю хг пееярпю бнгбпюрю днцнбнпнб нр #dt й юцемряйнлс днцнбнпс ╧ 004 нр 31.05.2017'
+        end as tableHeader
+        ,case 
+            when collector != 'bars'
+                and returnDateTo <= '20170112'
+            then 'mfo'
+            when collector != 'bars'
+                and returnDateFrom > '20170112'
+            then 'mfk'
+            when collector = 'bars'
+                and returnDateTo <= '20170112'
+            then 'mfo_bars_asd'
+            when collector = 'bars'
+                and returnDateFrom > '20170112'
+            then 'mfk_bars_ooo'
+        end as stamp
     from dates
 )
 
@@ -125,15 +191,21 @@ with users as
         ,ca.collectorAssignEnd
     from tf_getCollectorAssigns('19000101', getdate(), 0) ca
     inner join dbo.Credits c on c.id = ca.creditid
-    where creditid = 44247
+    --where creditid = @InputCredit --200239
 )
 
+,fin as 
+(
 select
     ca.userid
     ,ca.creditid
-    ,ca.collectorAssignStart as actionDate
-    ,ca.overduestart
-    ,concat(dl.dir, dl.collector, isnull('from' + dl.dateFrom, ''), isnull('to' + dl.dateTo, '')) as format    
+    ,collector
+    ,format(ca.collectorAssignStart, 'dd.MM.yyyy') as actionDate
+    ,format(ca.overduestart, 'dd.MM.yyyy') as overduestart
+    ,tableName
+    ,replace(tableHeader, '#dt', format(ca.collectorAssignStart, 'dd.MM.yyyy')) as tableHeader
+    ,stamp
+    ,ca.collectorAssignStart as actionDateForOrder
 from ca
 inner join dateslist dl on (ca.collectorAssignStart >= dl.dateFrom or dl.dateFrom is null)
     and (ca.collectorAssignStart <= dl.dateTo or dl.dateTo is null)
@@ -145,11 +217,16 @@ union
 select
     ca.userid
     ,ca.creditid
+    ,collector
+    ,format(ca.collectorAssignEnd, 'dd.MM.yyyy')
+    ,format(ca.overduestart, 'dd.MM.yyyy')
+    ,tableName
+    ,replace(tableHeader, '#dt', format(ca.collectorAssignEnd, 'dd.MM.yyyy')) as tableHeader
+    ,stamp
     ,ca.collectorAssignEnd
-    ,ca.overduestart
-    ,concat(dl.dir, dl.collector, isnull('from' + dl.dateFrom, ''), isnull('to' + dl.dateTo, '')) as format
 from ca
 inner join dateslist dl on (ca.collectorAssignEnd >= dl.dateFrom or dl.dateFrom is null)
     and (ca.collectorAssignEnd <= dl.dateTo or dl.dateTo is null)
     and dl.dir = 'return'
     and dl.collectorid = ca.collectorid
+)
