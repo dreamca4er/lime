@@ -18,9 +18,9 @@ from dict.house
 group by HOUSEGUID
 )
 
+insert into dict.houseactive(houseguid, aoguid, postalcode, address, regioncode, centstatus)
 select
-    row_number() over (order by h.AOGUID) as id
-    ,h.houseguid
+    h.houseguid
     ,h.aoguid
     ,h.postalcode
     ,hi.name
@@ -40,7 +40,6 @@ select
         ) as address
     ,cast(hi.regioncode as int) as regioncode
     ,cast(hi.centstatus as smallint) as centstatus
-into dict.houseactive
 from dict.house h
 inner join dict.hierarchy hi on h.AOGUID = hi.AOGUID
 inner join m on m.houseguid = h.HOUSEGUID

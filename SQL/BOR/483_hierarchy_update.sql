@@ -9,6 +9,9 @@ where contains(name, N'"новосибирский р-н"')
 CTE deltaAddrObj заменить на addrobj_delta
 */
 
+drop table if exists dict.hierarchyUpdate
+;
+
 with deltaAddrObj as 
 (       
     select distinct aoguid
@@ -70,7 +73,7 @@ with deltaAddrObj as
 select
     row_number() over (order by aoguid) as id
     ,*
-into #hierarchyUpdate
+into dict.hierarchyUpdate
 from h
 where isNeeded = 1
 ;
@@ -85,6 +88,5 @@ where aoguid in
 
 insert into dict.hierarchy(aoguid, name, parentguid, centstatus, regioncode, postalcode, aolevel)
 select aoguid, name, parentguid, centstatus, regioncode, postalcode, aolevel
-from #hierarchyUpdate
-;
+from dict.hierarchyUpdate
 
