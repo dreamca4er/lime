@@ -11,7 +11,8 @@ group by HOUSEGUID
 )
 
 select
-    h.HOUSEGUID
+    row_number() over (order by houseguid) as id
+    ,h.HOUSEGUID
     ,h.AOGUID
     ,h.POSTALCODE
     ,concat(
@@ -46,9 +47,6 @@ ALTER TABLE dict.houseactive ADD  CONSTRAINT [PK_houseactiveaoguid] PRIMARY KEY
 
 create FULLTEXT INDEX  ON dict.houseactive (HOUSENUM) KEY INDEX PK_houseactiveaoguid
 WITH (CHANGE_TRACKING AUTO)
-
-select count(*)
-from dict.houseactive
 
 create index houseactive_AOGUID_idx on dict.houseactive(AOGUID)
 /

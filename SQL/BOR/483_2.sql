@@ -1,11 +1,15 @@
-with h (aoguid, parentguid, CENTSTATUS, regioncode, POSTALCODE) as 
+--aoguid,name,parentguid,aolevel,centstatus,regioncode,postalcode
+
+with h (aoguid, name, parentguid, centstatus, regioncode, postalcode, aolevel) as 
 (
     select
         a.aoguid
+        ,cast(a.FORMALNAME + ' ' + a.SHORTNAME as nvarchar(255)) name
         ,cast(null as nvarchar(255)) as parentguid
-        ,a.CENTSTATUS
-        ,a.REGIONCODE
-        ,a.POSTALCODE
+        ,a.centstatus
+        ,a.regioncode
+        ,a.postalcode
+        ,a.aolevel
     from dict.addrobj a
     where a.ACTSTATUS = 1
         and a.AOLEVEL = 1
@@ -15,26 +19,44 @@ with h (aoguid, parentguid, CENTSTATUS, regioncode, POSTALCODE) as
 
     select
         a.aoguid
+        ,cast(name + ', ' + a.FORMALNAME + ' ' + a.SHORTNAME as nvarchar(255))
         ,a.parentguid
         ,case 
             when a.CENTSTATUS > h.CENTSTATUS
             then a.CENTSTATUS
             else h.CENTSTATUS
-        end as CENTSTATUS
-        ,a.REGIONCODE
-        ,a.POSTALCODE
+        end as centstatus
+        ,a.regioncode
+        ,a.postalcode
+        ,a.aolevel
     from dict.addrobj a
     inner join h on h.aoguid = a.PARENTGUID
     where a.ACTSTATUS = 1
 )
 
-select *
-into dict.hierarchy3
-from h
 
-create index hierarchy3_aoguid_idx on dict.hierarchy3(aoguid)
+select
+    row_number() over (order by aoguid) as id
+    ,*
+into dict.hierarchy4
+from h
 ;
 
+create index hierarchy_aoguid_idx on dict.hierarchy4(aoguid)
+;
+
+create index hierarchy_parentguid_idx on dict.hierarchy4(parentguid)
+;
+
+alter table dict.hierarchy4 alter column id integer not null
+;
+
+alter table dict.hierarchy4 add constraint pk_hierarchy_id primary key (id)
+;
+
+create fulltext index on dict.hierarchy4 (name) key index pk_hierarchy_id
+with (change_tracking auto)
+;
 
 select top 100 *
 from dict.houseactive2
