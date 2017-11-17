@@ -35,17 +35,18 @@ where uc.IsFraud = 0
                     and datediff(d, cps.Date, getdate()) >= 60
                     and datediff(d, cps.Date, getdate()) <= 116
             )
+/*
     and not exists 
                 (
                     select 1 from dbo.DebtorCollectorHistory dch
                     inner join dbo.Debtors d on d.Id = dch.DebtorId
---                    where 
                     where 1 = 1
 --                        and dch.CollectorId in (2198, 2234, 1049) -- Konga
 --                        and dch.CollectorId in (1229, 1237, 1049) -- Lime
                         and c.id = d.CreditId
 
                 )
+*/
     and not exists
                 (
                     select 1 from dbo.DebtorTransferCession dts
