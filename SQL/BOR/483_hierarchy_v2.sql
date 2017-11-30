@@ -1,11 +1,15 @@
+declare
+    @tmstmp nvarchar(20) = format(getdate(), 'yyyyMMdd_HHmmss')
+;
+
 drop table if exists dict.hierarchyPrev
-GO
+;
 
 drop table if exists dict.[hierarchyTmp]
-GO
+;
 
 drop table if exists #tmp2
-GO
+;
 
 CREATE TABLE [dict].[hierarchyTmp]  ( 
     [id]            int IDENTITY(1,1) NOT NULL,
@@ -18,7 +22,7 @@ CREATE TABLE [dict].[hierarchyTmp]  (
     [aolevel]       int NULL,
     placementGuid uniqueidentifier
 )
-GO
+;
 
 with h (aoguid, name, parentguid, centstatus, regioncode, postalcode, aolevel, placementGuid) as 
 (
@@ -54,12 +58,6 @@ with h (aoguid, name, parentguid, centstatus, regioncode, postalcode, aolevel, p
             then a.aoguid
             else h.placementGuid
         end
---        ,cast(cast(h.path as nvarchar(100)) + '->' + cast(a.aolevel as nvarchar(100)) as nvarchar(100))
---        ,case 
---            when a.aolevel in (1, 3, 4)
---            then a.aolevel
---            else h.regionLevel
---        end
     from dict.addrobj a
     inner join h on h.aoguid = a.PARENTGUID
     where a.ACTSTATUS = 1
@@ -68,7 +66,7 @@ with h (aoguid, name, parentguid, centstatus, regioncode, postalcode, aolevel, p
 insert into dict.hierarchyTmp (aoguid,name,parentguid,centstatus,regioncode,postalcode,aolevel, placementGuid)
 select aoguid,name,parentguid,centstatus,regioncode,postalcode,aolevel, placementGuid 
 from h
-GO
+;
 
 -- Нуходим данные по дублям
 select *
@@ -80,7 +78,10 @@ where name in
                 group by t.name
                 having count(*) > 1
             )
-GO
+;
+
+exec ('create index hierarchyTmp' + @tmstmp + '_parentguid_idx on dict.hierarchyTmp(parentguid)')
+;
 
 -- Находим из дублей те, у которого к некоторому потомку (или к самому дублю относятся дома)
 with a (initguid, currguid, hashouse) as 
@@ -118,7 +119,7 @@ with a (initguid, currguid, hashouse) as
             else 0
         end
     from a
-    inner join dict.hierarchy hi on a.currguid = hi.parentguid
+    inner join dict.hierarchyTmp hi on a.currguid = hi.parentguid
     where a.hashouse = 0
 )
 
@@ -134,14 +135,7 @@ where name in (select name from #tmp2)
                 )
 ;
 
-declare
-    @tmstmp nvarchar(20) = format(getdate(), 'yyyyMMdd_HHmmss')
-;
-
 exec ('create index hierarchyTmp' + @tmstmp + '_aoguid_idx on dict.hierarchyTmp(aoguid)')
-;
-
-exec ('create index hierarchyTmp' + @tmstmp + '_parentguid_idx on dict.hierarchyTmp(parentguid)')
 ;
 
 exec ('alter table dict.hierarchyTmp add constraint pk_hierarchyTmp' + @tmstmp + '_id primary key (id)')
@@ -163,4 +157,3 @@ exec sp_rename 'dict.hierarchyTmp', 'hierarchy', 'object'
 
 drop table if exists dict.[hierarchyTmp]
 GO
-

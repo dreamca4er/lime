@@ -2,6 +2,7 @@ create table ##lmru3230
 (
     id int
 )
+
 /
 /*
 select *
@@ -16,8 +17,37 @@ from dbo.syn_cmsusers
 -- 2198	Для	передачи
 -- 2234	не	оформлял
 -- 1049	Умершие	Должники
+
 drop table if exists ##lmru3230
 ;
+
+-- Конга
+--------------------------------------------------------------------------------
+select
+    uc.UserId as id
+into ##lmru3230
+from dbo.UserCards uc
+inner join dbo.Credits c on c.UserId = uc.UserId
+    and c.Status = 3
+    and datediff(d, c.PayDay, getdate()) >= 60
+    and datediff(d, c.PayDay, getdate()) <= 118
+    and not exists 
+                (
+                    select 1 from dbo.DebtorCollectorHistory dch
+                    inner join dbo.Debtors d on d.Id = dch.DebtorId
+                    where 1 = 1
+                        and dch.CollectorId in (2198, 2234, 1049) -- Konga
+                        and c.id = d.CreditId
+
+                )
+    and not exists
+                (
+                    select 1 from dbo.DebtorTransferCession dts
+                    inner join dbo.Debtors d on d.Id = dts.DebtorId
+                    where d.CreditId = c.id
+                )
+-- Лайм
+--------------------------------------------------------------------------------
 
 select
     uc.UserId as id
@@ -26,33 +56,45 @@ from dbo.UserCards uc
 inner join dbo.Credits c on c.UserId = uc.UserId
     and c.Status = 3
 where uc.IsFraud = 0
---    and datediff(d, c.PayDay, getdate()) >= 60
---    and datediff(d, c.PayDay, getdate()) <= 116
-    and exists
-            (
-                select 1 from dbo.CreditPaymentSchedules cps
-                where cps.CreditId = c.id
-                    and datediff(d, cps.Date, getdate()) >= 60
-                    and datediff(d, cps.Date, getdate()) <= 116
-            )
-/*
+    and datediff(d, c.PayDay, getdate()) >= 60
+    and datediff(d, c.PayDay, getdate()) <= 118
     and not exists 
                 (
                     select 1 from dbo.DebtorCollectorHistory dch
                     inner join dbo.Debtors d on d.Id = dch.DebtorId
                     where 1 = 1
---                        and dch.CollectorId in (2198, 2234, 1049) -- Konga
---                        and dch.CollectorId in (1229, 1237, 1049) -- Lime
+                        and dch.CollectorId in (1229, 1237, 1049) -- Lime
                         and c.id = d.CreditId
 
                 )
-*/
     and not exists
                 (
                     select 1 from dbo.DebtorTransferCession dts
                     inner join dbo.Debtors d on d.Id = dts.DebtorId
                     where d.CreditId = c.id
                 )
+--------------------------------------------------------------------------------
+-- Манго
+select
+    uc.UserId as id
+into ##lmru3230
+from dbo.UserCards uc
+inner join dbo.Credits c on c.UserId = uc.UserId
+    and c.Status = 3
+    and exists
+            (
+                select 1 from dbo.CreditPaymentSchedules cps
+                where cps.CreditId = c.id
+                    and datediff(d, cps.Date, getdate()) >= 60
+                    and datediff(d, cps.Date, getdate()) <= 118
+            )
+    and not exists
+                (
+                    select 1 from dbo.DebtorTransferCession dts
+                    inner join dbo.Debtors d on d.Id = dts.DebtorId
+                    where d.CreditId = c.id
+                )
+--------------------------------------------------------------------------------
 
 /
 select
@@ -91,7 +133,3 @@ left join dbo.Locations lh on lh.Id = uar.HouseId
 left join dbo.KladrHouses kh on kh.CODE = lh.KladrCode
 left join dbo.CreditBalances cb on cb.CreditId = c.id
     and cb.Date = cast(getdate() - 1 as date)
---left join dbo.CreditPayments cp on cp.creditid = c.id
---    and cp.DateCreated >= getdate()
-/
-
