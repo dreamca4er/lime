@@ -10,6 +10,7 @@ declare
     ,@cnt integer
     ,@limit integer = 8
     ,@dist integer = 4
+    ,@calcDist int
     ,@neededguid uniqueidentifier = cast(nullif(@aoguid, '') as uniqueidentifier)
     ,@lastAddressPart nvarchar(10) = case
                                         when charindex(' ', reverse(@str)) > 0
@@ -48,7 +49,6 @@ declare
     from string_split(@str, ' ')
     where value != ''
 ;
-
     delete from #forstr
     where stringPart in 
                         (
@@ -57,6 +57,15 @@ declare
                             where SCNAME is not null
                         )
 ;
+
+    select @calcDist = (select count(*) from #forstr)
+;
+
+    print 'calculated dist: ' + cast(@calcDist as nvarchar(5))
+;
+    select @dist = @calcDist + 1
+;
+
     update f 
     set f.realId = f2.rn
     from #forStr f
