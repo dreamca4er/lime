@@ -1,6 +1,13 @@
+drop procedure if exists dict.spGetPlaceHierarchy 
+;
+GO
+
+create procedure dict.spGetPlaceHierarchy 
+    @inputGuids nvarchar(max)
+as
+begin
 declare 
-    @inputGuids nvarchar(max) = '["0da8baca-6f3a-4fb7-8858-62afa72bbbf6", "f1132d73-ee09-4859-a36f-83a93617796f", "DF8740E0-CB0F-4664-892E-6E3E601827D4"]'
-    ,@aolevel int = 0
+    @aolevel int = 0
     ,@iter int = 0
 ;
 
@@ -96,5 +103,35 @@ select
     ,okato
 from #tmp
 order by initialGuid, aolevel desc
-/
-exec dict.spgetaddress N'Брянская обл, Брасовский р-н, Локоть рп, Вали Котика ул, д 13'
+end
+GO
+;
+--exec dict.spGetPlaceHierarchy '["0da8baca-6f3a-4fb7-8858-62afa72bbbf6"]'
+
+drop procedure if exists dict.spGetBuildingInfo
+;
+GO
+create procedure dict.spGetBuildingInfo
+    @inputGuids nvarchar(max)
+as
+begin
+
+with unnest as 
+(
+    select
+        cast(value as uniqueidentifier) as guid
+    from openjson(@inputGuids)
+)
+
+select
+    houseguid
+    ,housenum
+    ,buildnum
+    ,strucnum
+    ,postalcode
+from dict.houseactive
+where houseguid in (select guid from unnest)
+end
+go
+
+--exec dict.spGetBuildingInfo '["cf39a00f-cd4c-4202-9057-8a40e575b918"]'
