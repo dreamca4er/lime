@@ -28,6 +28,13 @@ outer apply
     where cb.creditid = c.id
     order by date desc
 ) cb
+outer apply
+(
+    select
+        sum(Amount + PercentAmount + CommissionAmount + PenaltyAmount + LongPrice + TransactionCosts) as paid
+    from dbo.CreditPayments cp
+    where cp.creditid = c.id
+) cp
 where c.Status != 8
     and DogovorNumber in
 (
