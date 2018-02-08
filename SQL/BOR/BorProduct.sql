@@ -5,6 +5,7 @@ select
     ,prod.StartedOn
     ,prod.ContractNumber
     ,epw.Description as PaymentWayName
+    ,case when stc.Id is not null then 1 else 2 end as productType
     ,prodSnap.Name + '\' + prodSnap.GroupName as tariffName
     ,prodSnap.PercentPerDay
     ,isnull(sps.Description, lps.Description) as statusName
@@ -51,3 +52,6 @@ outer apply
 ) prodSnap
 
 GO
+
+select *
+from [Prd].[vw_product]
