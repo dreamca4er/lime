@@ -1,6 +1,8 @@
-ALTER VIEW [Prd].[vw_product] as 
+
+CREATE VIEW [Prd].[vw_product] as 
 select
     prod.id as productid
+    ,prod.clientId
     ,prod.CreatedOn
     ,prod.StartedOn
     ,prod.ContractNumber
@@ -26,12 +28,12 @@ left join prd.EnumProductState sps on sps.EnumId = stc.Status
     and sps.ProductType = 1
 left join prd.EnumProductState lps on lps.EnumId = ltc.Status
     and lps.ProductType = 2
-left join pmt.Payment pay on pay.ContractIdentifier = prod.ContractNumber
+left join pmt.Payment pay on pay.ContractNumber = prod.ContractNumber
     and pay.PaymentDirection = 1
 left join pmt.EnumPaymentWay epw on epw.Id = pay.PaymentWay
-left join prd.ShortTermStatusLog stsl on stsl.Product_Id = prod.Id
+left join prd.ShortTermStatusLog stsl on stsl.ProductId = prod.Id
     and stsl.Status = 5
-left join prd.LongTermStatusLog ltsl on ltsl.Product_Id = prod.id
+left join prd.LongTermStatusLog ltsl on ltsl.ProductId = prod.id
     and ltsl.Status = 5
 outer apply 
 (
@@ -50,8 +52,4 @@ outer apply
         ) prodSnap
     order by StartedOn
 ) prodSnap
-
 GO
-
-select *
-from [Prd].[vw_product]
