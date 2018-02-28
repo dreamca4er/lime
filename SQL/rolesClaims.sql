@@ -109,7 +109,7 @@ declare @roles nvarchar(max) =
             "ReadCardsAndAccounts",
             "ReadClientsInfo"
         ],
-        "role": "SeniorOperator"
+        "role": "HeadOperator"
     },
     {
         "claim": [
