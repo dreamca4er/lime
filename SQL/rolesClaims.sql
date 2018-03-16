@@ -51,9 +51,31 @@ declare @roles nvarchar(max) =
             "EditClientsDetails",
             "ReadClientsNotificationBox",
             "ReadClientsUploadDocuments",
-            "EditClientsUploadDocuments"
+            "EditClientsUploadDocuments",
+            "ReadClientsInfo",
+            "ReadDebtorsListOwnerFilter",
+            "EditDebtorOwner",
+            "ReadDebtorOwner"
         ],
         "role": "HeadCollector"
+    },
+    {
+        "claim": [
+            "ReadDebtorInfo",
+            "EditDebtorInfo",
+            "ReadDebtorsList",
+            "EditDebtorsList",
+            "ReadClientsList",
+            "ReadClientsHead",
+            "ReadClientsDetails",
+            "EditClientsDetails",
+            "ReadClientsNotificationBox",
+            "ReadClientsUploadDocuments",
+            "EditClientsUploadDocuments",
+            "ReadClientsInfo",
+            "ReadDebtorsListOwnerFilter"
+        ],
+        "role": "LeadCollector"
     },
     {
         "claim": [
@@ -66,7 +88,9 @@ declare @roles nvarchar(max) =
             "ReadClientsProductList",
             "ReadClientsNotificationBox",
             "EditClientsNotificationBox",
-            "ReadClientsList"
+            "ReadClientsList",
+            "ReadClientsUploadDocuments",
+            "EditClientsUploadDocuments"
         ],
         "role": "Operators"
     },
@@ -77,6 +101,7 @@ declare @roles nvarchar(max) =
             "ReadClientsDetails",
             "EditClientsDetails",
             "ReadClientsProduct",
+            "ReadClientsProductList",
             "EditClientsProduct",
             "ReadClientsHead",
             "EditClientsHead",
@@ -98,6 +123,7 @@ declare @roles nvarchar(max) =
             "ReadClientsDetails",
             "EditClientsDetails",
             "ReadClientsProduct",
+            "ReadClientsProductList",
             "EditClientsProduct",
             "ReadClientsHead",
             "EditClientsHead",
@@ -109,7 +135,7 @@ declare @roles nvarchar(max) =
             "ReadCardsAndAccounts",
             "ReadClientsInfo"
         ],
-        "role": "HeadOperator"
+        "role": "SeniorOperator"
     },
     {
         "claim": [
@@ -150,13 +176,14 @@ declare @roles nvarchar(max) =
             "ReadClientsHead",
             "ReadClientsUploadDocuments",
             "EditClientsUploadDocuments",
-            "ReadClientsProducts",
+            "ReadClientsProduct",
             "ReadClientsMailSms",
             "ReadClientsNotificationBox",
             "ReadClientsList",
             "ReadDebtorsList",
             "ReadDebtorInfo",
-            "ReadClientsInfo"
+            "ReadClientsInfo",
+            "ReadClientsProductList"
         ],
         "role": "Lawyer"
     },
@@ -167,7 +194,7 @@ declare @roles nvarchar(max) =
             "ReadClientsHead",
             "ReadClientsUploadDocuments",
             "EditClientsUploadDocuments",
-            "ReadClientsProducts",
+            "ReadClientsProduct",
             "ReadClientsMailSms",
             "EditClientsMailSms",
             "ReadClientsNotificationBox",
@@ -175,7 +202,8 @@ declare @roles nvarchar(max) =
             "ReadClientsList",
             "ReadDebtorsList",
             "ReadDebtorInfo",
-            "ReadClientsInfo"
+            "ReadClientsInfo",
+            "ReadClientsProductList"
         ],
         "role": "RiskManager"
     },
@@ -186,13 +214,14 @@ declare @roles nvarchar(max) =
             "ReadClientsHead",
             "ReadClientsUploadDocuments",
             "EditClientsUploadDocuments",
-            "ReadClientsProducts",
+            "ReadClientsProduct",
             "ReadClientsMailSms",
             "ReadClientsNotificationBox",
             "ReadClientsList",
             "ReadDebtorsList",
             "ReadDebtorInfo",
-            "ReadClientsInfo"
+            "ReadClientsInfo",
+            "ReadClientsProductList"
         ],
         "role": "PODFT"
     },
@@ -208,7 +237,6 @@ declare @roles nvarchar(max) =
             "ReadClientsDetails",
             "ReadClientsHead",
             "ReadClientsList",
-            "ReadClientsDetails",
             "ReadClientsInfo"
         ],
         "role": "HeadMarketer"
@@ -251,6 +279,12 @@ declare @roles nvarchar(max) =
         "role": "client"
     }
 ]'
+;
+
+update r
+set name = 'SeniorOperator'
+from sts.roles r
+where name = 'HeadOperator'
 ;
 
 with roles as 
@@ -322,4 +356,26 @@ where not exists
                 select 1 from sts.RoleClaims rc
                 where rc.RoleId = r.Id
                     and rc.Value = tr.claimName
+            )
+;
+
+select r.* --delete r
+from sts.Roles r
+where not exists
+            (
+                select 1 from #tmpRoles t
+                where t.roleName = r.Name
+            )
+;
+
+select 
+    r.Name
+    , rc.Value as claimName--delete rc
+from sts.Roles r
+inner join sts.RoleClaims rc on rc.RoleId = r.Id
+where not exists 
+            (
+                select 1 from #tmpRoles t
+                where t.roleName = r.Name
+                    and rc.Value = t.claimName
             )
