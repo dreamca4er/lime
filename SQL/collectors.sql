@@ -3,7 +3,6 @@ declare
 	,@dateTo date = '20180313'
 ;
 
-    
 drop table if exists #part1
 ;
 
@@ -16,6 +15,10 @@ drop table if exists #pay
 drop table if exists #ColPeriod
 ;
 
+drop table if exists #ProdBal
+;
+
+-- Выгружаем платежи за период
 select
     ProductId
     ,mm.Date as PayDate
@@ -32,6 +35,7 @@ group by
     
 ;
 
+-- Выгружаем информацию по текущему портфелю
 select
 	op.collectorid
 	,op.overduedays
@@ -39,9 +43,12 @@ select
 	,pb.*
 	,p.ClientId
 	,p.StartedOn
+	,nd.SaldoNt as CurrentNotDistributed
 into #part1
 from col.OverdueProduct op
 inner join prd.Product p on p.id = op.ProductId
+left join acc.vw_acc nd on nd.productid = op.productid
+    and nd.Number like '47422%'
 outer apply
 (
 	select 
@@ -54,7 +61,7 @@ outer apply
 where op.isdeleted = 0
 
 ;
-
+-- Информация по платежам и назначения за период
 with prodnum as 
 (
 	select 
@@ -89,6 +96,28 @@ where op.OverdueStart is not null
     and LastDayWasAssigned >= @dateFrom
 ;
 
+-- Балансы кредитов на момент назначения (берем итог операций по дню назначения и вычитаем распределения за день)
+select
+    mm.productid
+    ,date
+    ,sum(sum(case when accNumber like '48801%' then opSum end)) over (partition by productid order by date rows unbounded preceding)
+    - isnull(sum(case when isDistributePayment = 1 and accNumber like '48801%' then opSum end), 0) as AmntBeforeDisrt
+    ,sum(sum(case when accNumber not like '48801%' then opSum end)) over (partition by productid order by date rows unbounded preceding)
+    - isnull(sum(case when isDistributePayment = 1 and accNumber not like '48801%' then opSum end), 0) as OtherBeforeDistr
+into #ProdBal
+from acc.vw_mm mm
+where exists
+    (
+        select 1
+        from #ColPeriod cp
+        where cp.AssignDate between @dateFrom and @dateTo
+            and mm.productid = cp.productid
+            and cp.AssignDate >= mm.date
+    )
+    and substring(accNumber, 1, 5) in ('48801', '48802', '48803', N'Штраф')
+group by mm.productid, date
+;
+
 with PayInPeriod as 
 (
     select
@@ -113,9 +142,13 @@ with PayInPeriod as
         ,sum(case when datediff(d, AssignDate, PayDate) + 1 >= 71 then body + other end) as AssignDay71Plus        
         ,count(case when cp.AssignDate between @dateFrom and @dateTo then 1 end) as AssignPeriod
         ,count(distinct p.clientid) as PayingClientCnt
+        ,sum(pb.AmntBeforeDisrt) as AssignAmountPeriod
+        ,sum(pb.OtherBeforeDistr) as AssignOtherPeriod
     from #ColPeriod cp
     left join prd.Product p on p.id = cp.productid
         and cp.PayDate is not null
+    left join #ProdBal pb on pb.productid = cp.productid 
+        and cp.AssignDate = pb.date
     group by cp.CollectorId
 )
  
@@ -125,6 +158,7 @@ with PayInPeriod as
         p2.collectorid
         ,isnull(sum(amt), 0) as AmtNow
         ,isnull(sum(other), 0) as OtherNow
+        ,isnull(sum(CurrentNotDistributed), 0) as CurrentNotDistributed
         ,count(*) as CntNow
         ,count(case when ProdNum = 1 then 1 end) as num1Now
         ,count(case when ProdNum = 2 then 1 end) as num2Now 
@@ -135,11 +169,11 @@ with PayInPeriod as
     group by p2.collectorid
 )
 
-
 select
     a.id
     ,a.name as CollectorName
     ,a.collectorGroups
+    ,isnull(CurrentNotDistributed, 0) as CurrentNotDistributed
     ,isnull(pip.AmtPeriod, 0) as AmtPeriod
     ,isnull(pip.OtherPeriod, 0) as OtherPeriod
     ,isnull(pip.PayPeriod1_3, 0) as PayPeriod1_3
@@ -150,6 +184,8 @@ select
     ,isnull(pip.PayPeriod31_45, 0) as PayPeriod31_45
     ,isnull(pip.PayPeriod46_70, 0) as PayPeriod46_70
     ,isnull(pip.PayPeriod71Plus, 0) as PayPeriod71Plus
+    ,isnull(pip.AssignAmountPeriod, 0) as AssignAmountPeriod
+    ,isnull(pip.AssignOtherPeriod, 0) as AssignOtherPeriod
     ,isnull(pip.AssignPeriod, 0) as AssignPeriod
     ,isnull(pip.AssignDay1_3, 0) as AssignDay1_3
     ,isnull(pip.AssignDay4_5, 0) as AssignDay4_5
@@ -174,4 +210,3 @@ left join CurrentPortfolio cp on cp.collectorid = a.id
 where a.collectorGroups is not null
     or a.id in (select collectorid from CurrentPortfolio)
     or a.id in (select collectorid from PayInPeriod)
-    

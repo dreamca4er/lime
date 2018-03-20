@@ -4,6 +4,8 @@ drop table if exists #clientinfo
 select c.clientid, pr.*
 into #clientinfo
 from client.vw_client c
+inner join client.UserStatusHistory ush on ush.ClientId = c.clientid
+    and ush.IsLatest = 1
 outer apply
 (
 	select top 1
@@ -15,7 +17,7 @@ outer apply
 		and p.status != 1
 	order by p.productid desc
 ) pr
-where c.substatus = 204
+where (c.substatus = 204 or ush.Substatus = 204)
     and not exists 
                 (
                     select 1
