@@ -55,7 +55,10 @@ declare @roles nvarchar(max) =
             "ReadClientsInfo",
             "ReadDebtorsListOwnerFilter",
             "EditDebtorOwner",
-            "ReadDebtorOwner"
+            "ReadDebtorOwner",
+            "ReadClientsProduct",
+            "ReadClientsProductList",
+            "ReadCardsAndAccounts"
         ],
         "role": "HeadCollector"
     },
@@ -90,7 +93,11 @@ declare @roles nvarchar(max) =
             "EditClientsNotificationBox",
             "ReadClientsList",
             "ReadClientsUploadDocuments",
-            "EditClientsUploadDocuments"
+            "EditClientsUploadDocuments",
+            "ReadClientsMailSms",
+            "ReadClientsAggregateData",
+            "ReadCardsAndAccounts",
+            "ReadClientsBlockMoneyWay"
         ],
         "role": "Operators"
     },
@@ -112,7 +119,17 @@ declare @roles nvarchar(max) =
             "ReadClientsList",
             "ReadClientsNotificationBox",
             "ReadCardsAndAccounts",
-            "ReadClientsInfo"
+            "ReadClientsInfo",
+            "ReadClientsBlock",
+            "EditClientsBlock",
+            "ReadClientsMailSms",
+            "EditClientsMailSms",
+            "ReadClientsAggregateData",
+            "ReadDirectoriesList",
+            "ReadBlockingDirectory",
+            "EditBlockingDirectory",
+            "ReadBlacklistDirectory",
+            "EditBlacklistDirectory"
         ],
         "role": "OperatorFullAccess"
     },
@@ -133,7 +150,17 @@ declare @roles nvarchar(max) =
             "ReadClientsNotificationBox",
             "EditClientsNotificationBox",
             "ReadCardsAndAccounts",
-            "ReadClientsInfo"
+            "ReadClientsInfo",
+            "ReadClientsBlock",
+            "EditClientsBlock",
+            "ReadClientsMailSms",
+            "EditClientsMailSms",
+            "ReadClientsAggregateData",
+            "ReadDirectoriesList",
+            "ReadBlockingDirectory",
+            "EditBlockingDirectory",
+            "ReadBlacklistDirectory",
+            "EditBlacklistDirectory"
         ],
         "role": "SeniorOperator"
     },
@@ -149,7 +176,13 @@ declare @roles nvarchar(max) =
             "EditClientsUploadDocuments",
             "ReadClientsList",
             "ReadCardsAndAccounts",
-            "ReadClientsInfo"
+            "ReadClientsInfo",
+            "ReadClientsAggregateData",
+            "EditClientsBlockMoneyWay",
+            "ReadClientsBlockMoneyWay",
+            "ReadClientsProduct",
+            "ReadClientsProductList",
+            "ReadClientsMailSms"
         ],
         "role": "Verificators"
     },
@@ -165,7 +198,10 @@ declare @roles nvarchar(max) =
             "ReadClientsNotificationBox",
             "EditClientsNotificationBox",
             "ReadCardsAndAccounts",
-            "ReadClientsInfo"
+            "ReadClientsInfo",
+            "ReadClientsProduct",
+            "ReadClientsProductList",
+            "ReadClientsMailSms"
         ],
         "role": "HeadVerificator"
     },
@@ -173,7 +209,6 @@ declare @roles nvarchar(max) =
         "claim": [
             "ReadClientsDetails",
             "ReadClientsAggregateData",
-            "ReadClientsHead",
             "ReadClientsUploadDocuments",
             "EditClientsUploadDocuments",
             "ReadClientsProduct",
@@ -183,7 +218,9 @@ declare @roles nvarchar(max) =
             "ReadDebtorsList",
             "ReadDebtorInfo",
             "ReadClientsInfo",
-            "ReadClientsProductList"
+            "ReadClientsProductList",
+            "ReadClientsHead",
+            "EditClientsHead"
         ],
         "role": "Lawyer"
     },
@@ -191,7 +228,6 @@ declare @roles nvarchar(max) =
         "claim": [
             "ReadClientsDetails",
             "ReadClientsAggregateData",
-            "ReadClientsHead",
             "ReadClientsUploadDocuments",
             "EditClientsUploadDocuments",
             "ReadClientsProduct",
@@ -203,7 +239,9 @@ declare @roles nvarchar(max) =
             "ReadDebtorsList",
             "ReadDebtorInfo",
             "ReadClientsInfo",
-            "ReadClientsProductList"
+            "ReadClientsProductList",
+            "ReadClientsHead",
+            "EditClientsHead"
         ],
         "role": "RiskManager"
     },
@@ -211,7 +249,6 @@ declare @roles nvarchar(max) =
         "claim": [
             "ReadClientsDetails",
             "ReadClientsAggregateData",
-            "ReadClientsHead",
             "ReadClientsUploadDocuments",
             "EditClientsUploadDocuments",
             "ReadClientsProduct",
@@ -221,7 +258,11 @@ declare @roles nvarchar(max) =
             "ReadDebtorsList",
             "ReadDebtorInfo",
             "ReadClientsInfo",
-            "ReadClientsProductList"
+            "ReadClientsProductList",
+            "ReadClientsHead",
+            "EditClientsHead",
+            "ReadBlacklistDirectory",
+            "EditBlacklistDirectory"
         ],
         "role": "PODFT"
     },
@@ -277,6 +318,20 @@ declare @roles nvarchar(max) =
             "Void"
         ],
         "role": "client"
+    },
+    {
+        "claim": [
+            "Void",
+            "Void"
+        ],
+        "role": "stsUserRemover"
+    },
+    {
+        "claim": [
+            "Void",
+            "Void"
+        ],
+        "role": "stsEditor"
     }
 ]'
 ;
@@ -359,7 +414,8 @@ where not exists
             )
 ;
 
-select r.* --delete r
+
+delete r --select r.* 
 from sts.Roles r
 where not exists
             (
@@ -368,9 +424,7 @@ where not exists
             )
 ;
 
-select 
-    r.Name
-    , rc.Value as claimName--delete rc
+delete rc -- select r.Name, rc.Value as claimName
 from sts.Roles r
 inner join sts.RoleClaims rc on rc.RoleId = r.Id
 where not exists 
@@ -379,3 +433,4 @@ where not exists
                 where t.roleName = r.Name
                     and rc.Value = t.claimName
             )
+
