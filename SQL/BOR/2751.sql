@@ -63,3 +63,5 @@ from #col c
 inner join sts.vw_admins a on a.id = c.CollectorId
 inner join #pay p on p.productid = c.productid
     and p.PayDate between c.AssignDate and c.LastDayWasAssigned
+
+/

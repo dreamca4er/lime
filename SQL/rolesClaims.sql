@@ -1,3 +1,6 @@
+use Borneo
+;
+
 drop table if exists #tmpRoles
 ;
 
@@ -13,7 +16,9 @@ declare @roles nvarchar(max) =
             "EditClientsUploadDocuments",
             "ReadClientsProduct",
             "EditClientsProduct",
-            "ReadClientsProductList"
+            "ReadClientsProductList",
+            "ReadClientsDetails",
+            "EditClientsDetails"
         ],
         "role": "HeadAccountant"
     },
@@ -27,7 +32,9 @@ declare @roles nvarchar(max) =
             "EditClientsUploadDocuments",
             "ReadClientsProduct",
             "EditClientsProduct",
-            "ReadClientsProductList"
+            "ReadClientsProductList",
+            "ReadClientsDetails",
+            "EditClientsDetails"            
         ],
         "role": "Accountant"
     },
@@ -67,18 +74,13 @@ declare @roles nvarchar(max) =
             "ReadDebtorInfo",
             "EditDebtorInfo",
             "ReadDebtorsList",
-            "EditDebtorsList",
-            "ReadClientsList",
-            "ReadClientsHead",
-            "ReadClientsDetails",
-            "EditClientsDetails",
-            "ReadClientsNotificationBox",
-            "ReadClientsUploadDocuments",
             "EditClientsUploadDocuments",
+            "ReadClientsList",
             "ReadClientsInfo",
+            "ReadClientsUploadDocuments",
             "ReadDebtorsListOwnerFilter"
         ],
-        "role": "LeadCollector"
+        "role":"CollectorIncoming"
     },
     {
         "claim": [
@@ -220,7 +222,8 @@ declare @roles nvarchar(max) =
             "ReadClientsInfo",
             "ReadClientsProductList",
             "ReadClientsHead",
-            "EditClientsHead"
+            "EditClientsHead",
+            "ReadDebtorsListOwnerFilter"
         ],
         "role": "Lawyer"
     },
@@ -241,7 +244,8 @@ declare @roles nvarchar(max) =
             "ReadClientsInfo",
             "ReadClientsProductList",
             "ReadClientsHead",
-            "EditClientsHead"
+            "EditClientsHead",
+            "ReadDebtorsListOwnerFilter"
         ],
         "role": "RiskManager"
     },
@@ -342,6 +346,16 @@ from sts.roles r
 where name = 'HeadOperator'
 ;
 
+update ur
+set
+    ur.RoleId = rh.Id
+from sts.roles rH, sts.UserRoles ur
+inner join sts.Roles r on r.Id = ur.RoleId
+where r.name = 'LeadCollector'
+    and rh.name = 'HeadCollector'
+;
+
+
 with roles as 
 (
     select
@@ -433,4 +447,3 @@ where not exists
                 where t.roleName = r.Name
                     and rc.Value = t.claimName
             )
-

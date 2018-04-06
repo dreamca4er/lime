@@ -28,7 +28,7 @@ where (c.substatus = 204 or ush.Substatus = 204)
 
 select *
 from #clientinfo
-/
+
 
 update c set status = 2,substatus = 202
 from client.Client c

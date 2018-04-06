@@ -1,20 +1,36 @@
-1735642    Тарасенко Роман - изменился адрес по прописке. Изменить вручную. Г. Брянск , улица Профсоюзов. Дом 9, кв.46
+exec fias.dict.spgetaddress N'ЕКАТЕРИНБУРГ Г, СВЕТЛЫЙ ПЕР, Д.3', '0697B011-731C-45C3-847F-D4319F59004D'
+with n as 
+(
+    select
+        ha.houseguid as BuildingId
+        ,ha.aoguid as LocationId
+        ,ha.postalcode as PostCode
+        ,ha.address as AddressStr
+        ,ha.regioncode as RegionId
+        ,'383' as apartment
+        ,hp.aoguid as PlacementId
+        ,hp.name as Placement
+    from fias.dict.houseactive ha
+    inner join fias.dict.hierarchy h on h.aoguid = ha.aoguid
+    inner join fias.dict.hierarchy hp on hp.aoguid = h.placementGuid
+    where ha.houseguid = '22AE4B51-9C48-45D4-AFC8-BF6EA7D928DE'
+)
 
-exec fias.dict.spgetaddress N'Г. Брянск , улица Профсоюзов. Дом 9'
+update a
+set
+    a.BuildingId = n.BuildingId
+    ,a.LocationId = n.LocationId
+    ,a.PostCode = n.PostCode
+    ,a.AddressStr = n.AddressStr
+    ,a.RegionId = n.RegionId
+    ,a.apartment = n.apartment
+    ,a.PlacementId = n.PlacementId
+    ,a.Placement = n.Placement
+from client.address a, n
+where a.clientid = 1774203
+    and a.AddressType = 1
 
-SELECT 
-    '58CCA0C5-888A-4464-A92B-3F310D813F67' AS houseguid
-    ,'C471801D-FD88-47D4-A5E8-4E8B9F2F80A3' AS aoguid
-    ,'241022' AS postalcode
-    ,'Брянская обл,Брянск г,Профсоюзов ул,д 46' AS address
-    ,32 AS regioncode
-    ,1 AS isHouse
-    
-exec fias.dict.spGetPlacement 'C471801D-FD88-47D4-A5E8-4E8B9F2F80A3'
-
-'414B71CF-921E-4BFC-B6E0-F7395D16AAEF'	'Брянская обл, Брянск г'
-/
 select *
 from client.address
-where clientid = 1735642
+where clientid = 1774203
     and AddressType = 1
