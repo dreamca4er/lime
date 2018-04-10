@@ -2,7 +2,7 @@ insert into col.CollectorGroup
  (
     Name, CollectorId
  )
-select 'B', '635f9f7e-27ee-43d2-bf6f-5f747ceaa4ed'
+select 'C', 'b0c59936-dcff-418e-8534-af4ac9b12682'
 
 select *
 from sts.vw_admins

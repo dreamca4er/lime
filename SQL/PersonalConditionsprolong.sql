@@ -8,6 +8,7 @@ select
     ,cdm.ContractNumber
     ,cdm.CreatedOn as DocCreatedOn
     ,stp.StartedOn as ProlongCreatedOn
+    ,cdm.Model
 into #d
 from doc.ClientDocumentMetadata cdm
 cross apply
@@ -39,9 +40,17 @@ where IsDeleted = 1
         )
     and json_value(model, '$.SmsCode') is null
     and model is not null
-/
-select *
+;
+
+select model
+from doc.ClientDocumentMetadata
+where id = 538350
+
+--update cdm
+--set cdm.model = json_modify(d.model, '$.SmsCode', sms.code)
+select d.*
 from #d d
+inner join doc.ClientDocumentMetadata cdm on cdm.Id = d.id
 outer apply
 (
     select top 1 
@@ -62,3 +71,4 @@ where not exists
             where d1.ContractNumber = d.ContractNumber
                 and d1.DocCreatedOn > d.DocCreatedOn 
         )
+
