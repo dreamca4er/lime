@@ -150,28 +150,94 @@ BEGIN
 END
 */
 
+/*
+with a as 
+(
+    select
+        AddressId
+        ,FixedAddress
+        ,ltrim(right(FixedAddress, charindex(',', reverse(FixedAddress)) - 1)) as BlockLevel1
+        ,replace(FixedAddress, right(FixedAddress, charindex(',', reverse(FixedAddress))), '') as FixedAddressNoBlock
+    from dbo.NoAddressList nal
+    where AddressStr != ''
+        and not exists 
+                    (
+                        select 1 from client.Address a
+                        inner join client.Client c on c.id = a.ClientId
+                        where nal.AddressId = a.id
+                            and (c.Substatus = 303 or c.UserBlockingPeriod = 3600)
+                    )
+        and not exists 
+                    (
+                        select 1 from dbo.SearchResult sr
+                        where sr.AddressId = nal.AddressId
+                    )
+)
+
+,b as 
+(
+    select
+        AddressId
+        ,FixedAddress
+        ,BlockLevel1
+        ,ltrim(right(FixedAddressNoBlock, charindex(',', reverse(FixedAddressNoBlock))- 1)) as BlockLevel2
+        ,replace(FixedAddressNoBlock, right(FixedAddressNoBlock, charindex(',', reverse(FixedAddressNoBlock))), '') as FixedAddressNoMoreBlock
+    from a
+    where FixedAddressNoBlock like '%,%'
+        and BlockLevel1 like N'к%'
+)
+
+,c as 
+(
+    select
+        AddressId
+        ,FixedAddressNoMoreBlock as Address
+        ,BlockLevel2 + ' ' + BlockLevel1 as house
+        ,cast(0 as bit) as isProcessed
+    from b
+    
+    union
+    
+    select 
+        AddressId
+        ,FixedAddressNoBlock
+        ,BlockLevel1
+        ,cast(0 as bit) as isProcessed
+    from a
+    where not exists
+            (
+                select 1 from b
+                where a.AddressId = b.AddressId
+            )
+)
+
+select *
+into dbo.NoAddressList2
+from c
+*/
+
 declare
     @id int
     ,@i int = 0
     ,@adr nvarchar(500)
 ;
 
-WHILE @i < 2000
+WHILE @i < 10000
 BEGIN  
     truncate table #tmp
     ;
     
     select top 1 @id = AddressId
-    from dbo.NoAddressList  nal
-    where isProcessedWithoutHouse = 0
+    from dbo.NoAddressList2  nal
+    where isProcessed = 0
         and not exists 
                     (
-                        select 1 from dbo.SearchResult sr
+                        select 1 from dbo.SearchResultWithoutHouse sr
                         where sr.AddressId = nal.AddressId
                     )
     ;
     
-    select @adr = (select replace(FixedAddress, right(FixedAddress, charindex(',', reverse(FixedAddress))), '') from dbo.NoAddressList where AddressId = @id)
+    select @adr = (select address from dbo.NoAddressList2 where AddressId = @id)
     ;
     
     insert into #tmp
@@ -184,8 +250,8 @@ BEGIN
     ;
     
     update a
-    set isProcessedWithoutHouse = 1
-    from dbo.NoAddressList a
+    set isProcessed = 1
+    from dbo.NoAddressList2 a
     where AddressId = @id
     ;
     
@@ -200,27 +266,4 @@ delete from dbo.SearchResultWithoutHouse
 update dbo.NoAddressList set isProcessedWithoutHouse = 0
 */
 
-select
-    a.AddressType
-    ,isProcessedWithoutHouse
-    ,count(*) as cnt
-    ,round(count(*) * 1.0 / sum(count(*)) over (), 4) * 100
-from dbo.NoAddressList nal
-inner join client.Address a on a.Id = nal.AddressId 
-    and not exists 
-                (
-                    select 1 from dbo.SearchResult sr
-                    where sr.AddressId = nal.AddressId
-                )
-group by a.AddressType, nal.isProcessedWithoutHouse
-
-select cnt, count(*)
-from 
-(
-    select count(*) cnt
-    from dbo.SearchResultWithoutHouse a
-    group by AddressId
-) a
-group by cnt
-order by cnt
 
