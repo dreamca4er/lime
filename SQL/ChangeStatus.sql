@@ -1,7 +1,10 @@
 drop table if exists #clientinfo
 ;
 
-select c.clientid, pr.*
+select 
+    c.clientid
+    ,case when th.HasTariff > 0 then 203 else 202 end as Substatus
+    ,pr.*
 into #clientinfo
 from client.vw_client c
 inner join client.UserStatusHistory ush on ush.ClientId = c.clientid
@@ -17,6 +20,13 @@ outer apply
 		and p.status != 1
 	order by p.productid desc
 ) pr
+outer apply
+(
+    select count(*) as HasTariff
+    from client.vw_TariffHistory th
+    where th.ClientId = c.clientid
+        and th.IsLatest = 1
+) th
 where (c.substatus = 204 or ush.Substatus = 204)
     and not exists 
                 (
@@ -30,9 +40,13 @@ select *
 from #clientinfo
 
 
-update c set status = 2,substatus = 202
+update c 
+set 
+    c.status = 2
+    ,c.substatus = ci.substatus
 from client.Client c
-where id in (select clientid from #clientinfo)
+inner join #clientinfo ci on ci.clientid = c.id
+
 ;
 
 update ush set islatest = 0
@@ -47,7 +61,7 @@ clientid, status, substatus, islatest, createdon, createdby
 select 
 	clientid
 	,2
-	,202
+	,substatus
 	,1
 	,datePaid
 	,cast(0x0 as uniqueidentifier)
