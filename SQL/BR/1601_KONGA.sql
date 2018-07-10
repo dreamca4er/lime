@@ -1,3 +1,31 @@
+drop table if exists #LimeWithCredit
+;
+
+drop table if exists #MangoWithCredit
+;
+
+select
+    c.ClientId
+    ,c.Passport
+into #LimeWithCredit
+from "BOR-LIME".Borneo.prd.vw_product p
+inner join "BOR-LIME".Borneo.client.vw_client c on p.clientid = c.clientid
+where p.status in (3, 4, 7)
+;
+
+create index IX_LimeWithCredit_Passport on #LimeWithCredit(Passport)
+;
+
+select
+    fu.id as ClientId
+    ,uc.Passport
+into #MangoWithCredit
+from "Mango-DB".Limezaim_Website.dbo.FrontendUsers fu
+inner join "Mango-DB".Limezaim_Website.dbo.UserCards uc on uc.userid = fu.id
+inner join "Mango-DB".Limezaim_Website.dbo.Credits c on c.UserId = fu.id
+    and c.Status = 1
+;
+/
 drop table if exists #cl
 ;
 
@@ -18,11 +46,14 @@ select
     ,ts.TariffName + '/' + ts.StepName as TariffName
     ,uth.IsLatest
     ,ts.StepOrder
+    ,cast(uth.DateCreated as date) as TariffStart
+    ,null as TariffEnd
     ,N'Есть тариф, нет кредитов' as ClientType
 from dbo.UserTariffHistory uth
 inner join dbo.vw_TariffSteps ts on ts.StepID = uth.StepId
     and (ts.TariffID = 2 and ts.StepOrder in (7,8,9,10,11,12)
         or ts.TariffID = 4 and ts.StepOrder in (1,2,3,4,5,6,7))
+inner join dbo.Tariffs t on t.Id = ts.TariffID
 where uth.islatest = 1
     and ts.TariffID in (2, 4)
     and not exists 
@@ -38,6 +69,7 @@ where uth.islatest = 1
                     and c.Status = 2
                     and datediff(d, c.DatePaid, getdate()) > 10
             )
+    and datediff(d, dateadd(d, t.ActivePeriod, uth.DateCreated), getdate()) < -3
 
 union
 
@@ -49,6 +81,8 @@ select
     ,ts.TariffName + '/' + ts.StepName as TariffName
     ,uth.IsLatest
     ,ts.StepOrder
+    ,cast(uth.DateCreated as date) as TariffStart
+    ,null as TariffEnd
     ,N'Тариф истекает' as ClientType
 from dbo.UserTariffHistory uth
 inner join dbo.vw_TariffSteps ts on ts.StepID = uth.StepId
@@ -75,6 +109,8 @@ select
     ,ts.TariffName + '/' + ts.StepName as TariffName
     ,uth.IsLatest
     ,ts.StepOrder
+    ,cast(uth.DateCreated as date) as TariffStart
+    ,dateadd(d, t.ActivePeriod + 1, cast(uth.DateCreated as date)) as TariffEnd
     ,N'Тариф истек в последние 45 дней' as ClientType   
 from dbo.UserTariffHistory uth
 inner join dbo.vw_TariffSteps ts on ts.StepID = uth.StepId
@@ -108,6 +144,33 @@ where uth.islatest = 0
             )            
 )
 
+select
+    c.clientid
+    ,fu.Lastname + ' ' + fu.Firstname + isnull(' ' + fu.Fathername, '') as fio
+    ,fu.emailaddress as Email
+    ,fu.mobilephone as PhoneNumber
+    ,max(case when c.ProductType = 1 then c.TariffName end) as STTariffName
+    ,max(case when c.ProductType = 1 then c.TariffStart end) as STTariffStart
+    ,max(case when c.ProductType = 1 then c.TariffEnd end) as STTariffEnd
+    ,max(case when c.ProductType = 1 then c.ClientType end) as STClientType
+    ,max(case when c.ProductType = 2 then c.TariffName end) as LTTariffName
+    ,max(case when c.ProductType = 2 then c.TariffStart end) as LTTariffStart
+    ,max(case when c.ProductType = 2 then c.TariffEnd end) as LTTariffEnd
+    ,max(case when c.ProductType = 2 then c.ClientType end) as LTClientType
+from clients c
+inner join dbo.FrontendUsers fu on fu.Id = c.clientid
+inner join dbo.UserCards uc on uc.UserId = fu.id
+where uc.IsFraud = 0
+    and uc.IsDied = 0
+    and uc.IsCourtOrder = 0
+group by 
+    c.clientid
+    ,fu.Lastname + ' ' + fu.Firstname + isnull(' ' + fu.Fathername, '')
+    ,fu.emailaddress
+    ,fu.mobilephone
+
+
+/
 ,upped as 
 (
 select 

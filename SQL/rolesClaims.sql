@@ -67,7 +67,9 @@ declare @roles nvarchar(max) =
             "ReadClientsProduct",
             "ReadClientsProductList",
             "ReadCardsAndAccounts",
-            "CanAddDebtorPhone"
+            "CanAddDebtorPhone",
+            "ReadCollectorsDirectories",
+            "EditCollectorsDirectories"
         ],
         "role": "HeadCollector"
     },
@@ -103,7 +105,10 @@ declare @roles nvarchar(max) =
             "ReadClientsMailSms",
             "ReadClientsAggregateData",
             "ReadCardsAndAccounts",
-            "ReadClientsBlockMoneyWay"
+            "ReadClientsBlockMoneyWay",
+            "ReadPromocode",
+            "ReadTrafficSources",
+            "ReadClientPromocodes"
         ],
         "role": "Operators"
     },
@@ -135,7 +140,14 @@ declare @roles nvarchar(max) =
             "EditBlockingDirectory",
             "ReadBlacklistDirectory",
             "EditBlacklistDirectory",
-            "ReadDirectoriesList"
+            "ReadDirectoriesList",
+            "ReadPromocode",
+            "ReadTrafficSources",
+            "ReadClientPromocodes",
+            "EditShortTermTariffDirectory",
+            "EditLongTermTariffDirectory",
+            "ReadShortTermTariffDirectory",
+            "ReadLongTermTariffDirectory"
         ],
         "role": "OperatorFullAccess"
     },
@@ -166,7 +178,14 @@ declare @roles nvarchar(max) =
             "EditBlockingDirectory",
             "ReadBlacklistDirectory",
             "EditBlacklistDirectory",
-            "ReadDirectoriesList"
+            "ReadDirectoriesList",
+            "ReadPromocode",
+            "ReadTrafficSources",
+            "ReadClientPromocodes",
+            "EditShortTermTariffDirectory",
+            "EditLongTermTariffDirectory",
+            "ReadShortTermTariffDirectory",
+            "ReadLongTermTariffDirectory"
         ],
         "role": "SeniorOperator"
     },
@@ -292,7 +311,13 @@ declare @roles nvarchar(max) =
             "ReadPromocode",
             "EditPromocode",
             "EditTrafficSources",
-            "ReadTrafficSources"
+            "ReadTrafficSources",
+            "ReadClientsProduct",
+            "ReadClientPromocodes",
+            "EditShortTermTariffDirectory",
+            "EditLongTermTariffDirectory",
+            "ReadShortTermTariffDirectory",
+            "ReadLongTermTariffDirectory"
         ],
         "role": "HeadMarketer"
     },
@@ -305,7 +330,10 @@ declare @roles nvarchar(max) =
             "ReadPromocode",
             "EditPromocode",
             "EditTrafficSources",
-            "ReadTrafficSources"
+            "ReadTrafficSources",
+            "ReadClientsProduct",
+            "ReadClientPromocodes",
+            "ReadClientsProductList"
         ],
         "role": "Marketer"
     },

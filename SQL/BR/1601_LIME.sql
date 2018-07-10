@@ -1,3 +1,35 @@
+drop table if exists #KongaWithCredit
+;
+
+drop table if exists #MangoWithCredit
+;
+
+select
+    fu.id as ClientId
+    ,uc.Passport
+into #KongaWithCredit
+from "Konga-DB".Limezaim_Website.dbo.FrontendUsers fu
+inner join "Konga-DB".Limezaim_Website.dbo.UserCards uc on uc.userid = fu.id
+inner join "Konga-DB".Limezaim_Website.dbo.Credits c on c.UserId = fu.id
+    and c.Status in (1, 3)
+;
+
+create index IX_KongaWithCredit_Passport on #KongaWithCredit(Passport)
+;
+
+select
+    fu.id as ClientId
+    ,uc.Passport
+into #MangoWithCredit
+from "Mango-DB".Limezaim_Website.dbo.FrontendUsers fu
+inner join "Mango-DB".Limezaim_Website.dbo.UserCards uc on uc.userid = fu.id
+inner join "Mango-DB".Limezaim_Website.dbo.Credits c on c.UserId = fu.id
+    and c.Status in (1, 3)
+;
+
+create index IX_MangoWithCredit_Passport on #MangoWithCredit(Passport)
+;
+/
 drop table if exists #cl
 ;
 
@@ -6,7 +38,6 @@ drop table if exists #cl2
 
 drop table if exists #cl3
 ;
-
 
 with clients as 
 (
@@ -17,8 +48,14 @@ select
     ,th.TariffId
     ,th.TariffName
     ,th.IsLatest
+    ,th.CreatedOn as TariffStart
+    ,cast(null as date) as TariffEnd 
     ,N'Есть тариф, нет кредитов' as ClientType
 from client.vw_TariffHistory th
+left join prd.ShortTermTariff stt on stt.Id = th.TariffId
+    and th.ProductType = 1
+left join prd.LongTermTariff ltt on ltt.Id = th.TariffId
+    and th.ProductType = 2
 left join client."Identity" i on i.ClientId = th.ClientId
 where IsLatest = 1
     and not exists 
@@ -29,6 +66,7 @@ where IsLatest = 1
             )
     and (th.ProductType = 1 and th.TariffId in (7,8,9,10,11,12)
         or th.ProductType = 2 and th.TariffId in (1,2,3,4,5,6,7))
+    and datediff(d, dateadd(d, isnull(stt.ActivePeriod, ltt.ActivePeriod), th.CreatedOn), getdate()) < -3
 
 union
 
@@ -39,6 +77,8 @@ select
     ,th.TariffId
     ,th.TariffName
     ,th.IsLatest
+    ,th.CreatedOn as TariffStart
+    ,cast(null as date) as TariffEnd
     ,N'Тариф истекает' as ClientType
 from client.vw_TariffHistory th
 left join prd.ShortTermTariff stt on stt.Id = th.TariffId
@@ -65,7 +105,9 @@ select
     ,th.TariffId
     ,th.TariffName
     ,th.IsLatest
-    ,N'Тариф истек в последние 45 дней' as ClientType    
+    ,th.CreatedOn as TariffStart
+    ,cast(dateadd(d, isnull(stt.ActivePeriod, ltt.ActivePeriod) + 1, th.CreatedOn) as date) as TariffEnd
+    ,N'Тариф истек в последние 45 дней' as ClientType
 from client.vw_TariffHistory th
 left join prd.ShortTermTariff stt on stt.Id = th.TariffId
     and th.ProductType = 1
@@ -100,6 +142,46 @@ where datediff(d, dateadd(d, isnull(stt.ActivePeriod, ltt.ActivePeriod), th.Crea
             )
 )
 
+select
+    cl.clientid
+    ,cl.fio
+    ,cl.Email
+    ,cl.PhoneNumber
+--    ,c.ProductType
+--    ,c.TariffId
+--    ,c.IsLatest
+    ,max(case when c.ProductType = 1 then c.TariffName end) as STTariffName
+    ,max(case when c.ProductType = 1 then c.TariffStart end) as STTariffStart
+    ,max(case when c.ProductType = 1 then c.TariffEnd end) as STTariffEnd
+    ,max(case when c.ProductType = 1 then c.ClientType end) as STClientType
+    ,max(case when c.ProductType = 2 then c.TariffName end) as LTTariffName
+    ,max(case when c.ProductType = 2 then c.TariffStart end) as LTTariffStart
+    ,max(case when c.ProductType = 2 then c.TariffEnd end) as LTTariffEnd
+    ,max(case when c.ProductType = 2 then c.ClientType end) as LTClientType
+from clients c
+inner join client.vw_client cl on c.clientid = cl.clientid
+where cl.status != 3
+    and cl.IsDead = 0
+    and cl.IsCourtOrdered = 0
+    and cl.IsFrauder = 0
+    and cl.BankruptType = 0 
+    and not exists 
+        (
+            select 1 from #KongaWithCredit kwc
+            where kwc.Passport = cl.Passport collate SQL_Latin1_General_CP1_CI_AS
+        )
+    and not exists 
+        (
+            select 1 from #MangoWithCredit mwc
+            where mwc.Passport = cl.Passport collate SQL_Latin1_General_CP1_CI_AS
+        )
+group by 
+    cl.clientid
+    ,cl.fio
+    ,cl.Email
+    ,cl.PhoneNumber
+
+/
 ,upped as 
 (
 select *

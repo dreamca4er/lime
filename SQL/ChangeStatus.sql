@@ -39,7 +39,7 @@ where (c.substatus = 204 or ush.Substatus = 204)
 select *
 from #clientinfo
 
-
+/
 update c 
 set 
     c.status = 2
@@ -65,4 +65,37 @@ select
 	,1
 	,datePaid
 	,cast(0x0 as uniqueidentifier)
+from #clientinfo
+
+
+/
+
+select
+    ush.*
+    ,ush1.CreatedOn --update ush set ush.CreatedOn = dateadd()
+from client.UserStatusHistory ush
+inner join #clientinfo ci on ci.clientid = ush.ClientId
+    and ush.IsLatest = 1
+cross apply
+(
+    select top 1 CreatedOn
+    from client.UserStatusHistory ush1
+    where ush1.ClientId = ush.ClientId
+        and ush1.IsLatest = 0
+    order by ush1.CreatedOn desc
+) ush1
+
+select * --update ush set islatest = 1, substatus = 202
+from client.UserStatusHistory ush
+inner join #clientinfo ci on ci.clientid = ush.ClientId
+    and ush.IsLatest = 0
+where not exists 
+    (
+        select 1
+        from client.UserStatusHistory ush1
+        where ush1.ClientId = ush.ClientId
+            and ush1.CreatedOn > ush.CreatedOn
+    )
+    
+select *
 from #clientinfo
