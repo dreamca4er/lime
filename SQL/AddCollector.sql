@@ -7,12 +7,12 @@ select 'B', '5bf5485a-94f1-47e5-9f2c-2a9a0711f465'
 
 select * -- update op set IsDeleted = 1 
 from col.OverdueProduct op
-where op.CollectorId in ('5bf5485a-94f1-47e5-9f2c-2a9a0711f465')
+where op.CollectorId in ('d321ecfc-0569-4da7-b15e-3bd2453edebb')
     and IsDeleted = 0
 
 select * -- delete
 from col.CollectorGroup
-where CollectorId in ('5bf5485a-94f1-47e5-9f2c-2a9a0711f465')
+where CollectorId in ('d321ecfc-0569-4da7-b15e-3bd2453edebb')
 
 /******************************************************************************/
 

@@ -18,7 +18,8 @@ declare @roles nvarchar(max) =
             "EditClientsProduct",
             "ReadClientsProductList",
             "ReadClientsDetails",
-            "EditClientsDetails"
+            "EditClientsDetails",
+            "ReadDebtorLastCollector"
         ],
         "role": "HeadAccountant"
     },
@@ -34,7 +35,8 @@ declare @roles nvarchar(max) =
             "EditClientsProduct",
             "ReadClientsProductList",
             "ReadClientsDetails",
-            "EditClientsDetails"            
+            "EditClientsDetails"            ,
+            "ReadDebtorLastCollector"
         ],
         "role": "Accountant"
     },
@@ -69,7 +71,8 @@ declare @roles nvarchar(max) =
             "ReadCardsAndAccounts",
             "CanAddDebtorPhone",
             "ReadCollectorsDirectories",
-            "EditCollectorsDirectories"
+            "EditCollectorsDirectories",
+            "ReadDebtorLastCollector"
         ],
         "role": "HeadCollector"
     },
@@ -84,7 +87,8 @@ declare @roles nvarchar(max) =
             "ReadClientsUploadDocuments",
             "ReadDebtorsListOwnerFilter",
             "ReadDebtorCommentAuthor",
-            "CanAddDebtorPhone"
+            "CanAddDebtorPhone",
+            "ReadDebtorLastCollector"
         ],
         "role":"CollectorIncoming"
     },
@@ -108,7 +112,8 @@ declare @roles nvarchar(max) =
             "ReadClientsBlockMoneyWay",
             "ReadPromocode",
             "ReadTrafficSources",
-            "ReadClientPromocodes"
+            "ReadClientPromocodes",
+            "ReadDebtorLastCollector"
         ],
         "role": "Operators"
     },
@@ -147,7 +152,8 @@ declare @roles nvarchar(max) =
             "EditShortTermTariffDirectory",
             "EditLongTermTariffDirectory",
             "ReadShortTermTariffDirectory",
-            "ReadLongTermTariffDirectory"
+            "ReadLongTermTariffDirectory",
+            "ReadDebtorLastCollector"
         ],
         "role": "OperatorFullAccess"
     },
@@ -185,7 +191,8 @@ declare @roles nvarchar(max) =
             "EditShortTermTariffDirectory",
             "EditLongTermTariffDirectory",
             "ReadShortTermTariffDirectory",
-            "ReadLongTermTariffDirectory"
+            "ReadLongTermTariffDirectory",
+            "ReadDebtorLastCollector"
         ],
         "role": "SeniorOperator"
     },
@@ -207,7 +214,8 @@ declare @roles nvarchar(max) =
             "ReadClientsBlockMoneyWay",
             "ReadClientsProduct",
             "ReadClientsProductList",
-            "ReadClientsMailSms"
+            "ReadClientsMailSms",
+            "ReadDebtorLastCollector"
         ],
         "role": "Verificators"
     },
@@ -226,7 +234,8 @@ declare @roles nvarchar(max) =
             "ReadClientsInfo",
             "ReadClientsProduct",
             "ReadClientsProductList",
-            "ReadClientsMailSms"
+            "ReadClientsMailSms",
+            "ReadDebtorLastCollector"
         ],
         "role": "HeadVerificator"
     },
@@ -247,7 +256,8 @@ declare @roles nvarchar(max) =
             "ReadClientsHead",
             "EditClientsHead",
             "ReadDebtorsListOwnerFilter",
-            "EditClientsMailSms"
+            "EditClientsMailSms",
+            "ReadDebtorLastCollector"
         ],
         "role": "Lawyer"
     },
@@ -269,7 +279,8 @@ declare @roles nvarchar(max) =
             "ReadClientsProductList",
             "ReadClientsHead",
             "EditClientsHead",
-            "ReadDebtorsListOwnerFilter"
+            "ReadDebtorsListOwnerFilter",
+            "ReadDebtorLastCollector"
         ],
         "role": "RiskManager"
     },
@@ -291,7 +302,8 @@ declare @roles nvarchar(max) =
             "EditClientsHead",
             "ReadBlacklistDirectory",
             "EditBlacklistDirectory",
-            "ReadDirectoriesList"
+            "ReadDirectoriesList",
+            "ReadDebtorLastCollector"
         ],
         "role": "PODFT"
     },
@@ -317,7 +329,8 @@ declare @roles nvarchar(max) =
             "EditShortTermTariffDirectory",
             "EditLongTermTariffDirectory",
             "ReadShortTermTariffDirectory",
-            "ReadLongTermTariffDirectory"
+            "ReadLongTermTariffDirectory",
+            "ReadDebtorLastCollector"
         ],
         "role": "HeadMarketer"
     },
@@ -333,7 +346,8 @@ declare @roles nvarchar(max) =
             "ReadTrafficSources",
             "ReadClientsProduct",
             "ReadClientPromocodes",
-            "ReadClientsProductList"
+            "ReadClientsProductList",
+            "ReadDebtorLastCollector"
         ],
         "role": "Marketer"
     },
@@ -470,7 +484,6 @@ where not exists
             )
 ;
 
-
 delete r --select r.* 
 from sts.Roles r
 where not exists
@@ -489,3 +502,5 @@ where not exists
                 where t.roleName = r.Name
                     and rc.Value = t.claimName
             )
+            
+    
