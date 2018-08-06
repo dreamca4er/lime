@@ -330,7 +330,8 @@ declare @roles nvarchar(max) =
             "EditLongTermTariffDirectory",
             "ReadShortTermTariffDirectory",
             "ReadLongTermTariffDirectory",
-            "ReadDebtorLastCollector"
+            "ReadDebtorLastCollector",
+            "ReadLoyaltyProgram"
         ],
         "role": "HeadMarketer"
     },
@@ -347,7 +348,8 @@ declare @roles nvarchar(max) =
             "ReadClientsProduct",
             "ReadClientPromocodes",
             "ReadClientsProductList",
-            "ReadDebtorLastCollector"
+            "ReadDebtorLastCollector",
+            "ReadLoyaltyProgram"
         ],
         "role": "Marketer"
     },
