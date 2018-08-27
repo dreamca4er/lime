@@ -3,16 +3,16 @@ insert into col.CollectorGroup
  (
     Name, CollectorId
  )
-select 'B', '5bf5485a-94f1-47e5-9f2c-2a9a0711f465'
+select 'B', 'a21686fb-f04f-43eb-8dc7-8e9d678d574a'
 
 select * -- update op set IsDeleted = 1 
 from col.OverdueProduct op
-where op.CollectorId in ('d321ecfc-0569-4da7-b15e-3bd2453edebb')
+where op.CollectorId in ('a21686fb-f04f-43eb-8dc7-8e9d678d574a')
     and IsDeleted = 0
 
 select * -- delete
 from col.CollectorGroup
-where CollectorId in ('d321ecfc-0569-4da7-b15e-3bd2453edebb')
+where CollectorId in ('a21686fb-f04f-43eb-8dc7-8e9d678d574a')
 
 /******************************************************************************/
 
