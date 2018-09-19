@@ -309,6 +309,7 @@ declare @roles nvarchar(max) =
             ,"ReadDebtorInfo"
             ,"ReadClientsProductList"
             ,"EditClientsHead"
+            ,"ReadDebtorsListOwnerFilter"
         ],
         "role": "RiskOperator"
     },
