@@ -2,8 +2,8 @@ select cppi.*
 from pmt.Payment p
 inner join pmt.CreditCardPaymentInfo ccpi on ccpi.PaymentId = p.id
 inner join pmt.CreditPilotPaymentInfo cppi on cppi.CreditCardPaymentInfoId = ccpi.Id
-where p.PaymentDirection = 1
-    and p.ContractNumber = '1900075609'
+where p.id = 2002029
+    
 
 select fpi.*
 from pmt.Payment p
