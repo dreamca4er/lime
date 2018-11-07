@@ -1,47 +1,25 @@
-select
-    cg.Name as GroupName
-    ,avg(crr.Score) as AvgScore
-from col.OverdueProduct op
-inner join prd.Product p on p.id = op.ProductId
-inner join col.CollectorGroup cg on cg.CollectorId = op.CollectorId
-outer apply
-(
-    select top 1 
-        nullif(crr.Score, 0) as Score
-    from cr.CreditRobotResult crr
-    where crr.ClientId = p.ClientId
-        and crr.CreatedOn < p.CreatedOn
-    order by crr.CreatedOn desc
-) crr
-where op.IsDeleted = 0
-    and cg.Name in ('B', 'C')
-group by cg.Name
 
+declare 
+    @dateFrom date = '20180801'
+    ,@dateTo date = getdate()
 
-/
-select
-    cast(CreatedOn as date)
-    ,datediff(d, CreatedOn, getdate()) as DD
-    ,count(case when isnull(Score, 0) = 0 then 1 end) as ZeroScore
-    ,count(case when isnull(Score, 0) != 0 then 1 end) as OtherScore
-from cr.CreditRobotResult
-where CreatedOn > '20180501'
-    and cast(CreatedOn as date) >= dateadd(d, 104, '20180518') 
-group by cast(CreatedOn as date), datediff(d, CreatedOn, getdate())
-/
+set @dateFrom = (select max(d) from (values (@dateFrom), ('20180901')) v(d))
+;
+
 drop table if exists #c
 ;
 
-select
-    min(cd.Date) as Date
-    ,cd.ProductId
+drop table if exists #cs
+;
+
+select distinct
+    cd.ProductId
+    ,p.CreatedOn
     ,cd.ClientId
 into #c
 from bi.CollectorPortfolioDetail cd
-where cd.Date >= '20180830'
-group by
-    cd.ProductId
-    ,cd.ClientId
+inner join prd.Product p on p.id = cd.ProductId
+where cd.Date between @dateFrom and @dateTo
 ;
 
 select *
@@ -49,17 +27,18 @@ into #cs
 from #c cd
 outer apply
 (
-    select top 1 crr.Score 
+    select top 1 
+        nullif(crr.Score, 0) as Score  
     from cr.CreditRobotResult crr
     where crr.ClientId = cd.ClientId
-        and crr.CreatedOn < cd.Date
+        and crr.CreatedOn < cd.CreatedOn
     order by crr.CreatedOn desc
 ) crr
 ;
 
 create index IX_cs_ProductId on #cs(ProductId)
 ;
-/
+
 select
     cd.Date
     ,cd.CollectorId
@@ -70,7 +49,7 @@ from bi.CollectorPortfolioDetail cd
 inner join #cs cs on cs.ProductId = cd.ProductId
 inner join bi.CollectorGroupHistory cgh on cgh.CollectorId = cd.CollectorId
     and cgh.Date = cd.Date
-where cd.Date >= '20180830'
+where cd.Date between @dateFrom and @dateTo
     and cgh.CollectorGroup in ('B', 'C')
 group by 
     cd.Date

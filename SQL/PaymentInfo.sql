@@ -17,4 +17,4 @@ select cpi.*
 from pmt.Payment p
 inner join pmt.ContactPayment cp on cp.PaymentId = p.Id
 inner join pmt.ContactPaymentInfo cpi on cpi.ContactPaymentId = cp.id
-where p.id = 1247031
+where p.id = 1965311
