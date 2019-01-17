@@ -212,7 +212,7 @@ where not exists
     )
 ;
 
-select t.* -- update c set status = 203
+select t.* -- update c set substatus = 203
 from #t t
 inner join client.Client c on c.id = t. ClientId
 /
