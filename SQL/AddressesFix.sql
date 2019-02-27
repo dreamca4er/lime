@@ -486,10 +486,9 @@ begin catch
         , @id int
     ;
 
---    update a 
---    set Data = replace(a.Data, 'unrestricted_value":"' + a.AddressStr + '"', 'unrestricted_value":"' + replace(AddressStr, '"', '\"') + '"')
---        , @id = a.id
-    select *
+    update a 
+    set Data = replace(a.Data, 'unrestricted_value":"' + a.AddressStr + '"', 'unrestricted_value":"' + replace(AddressStr, '"', '\"') + '"')
+        , @id = a.id
     from client.Address a
     where substring(data, @pos + 1, 1) = @let
         and substring(data, @pos, 1) = N'"'
@@ -507,4 +506,165 @@ end catch
 1356351
 */
 
- 
+ /
+select *, replace(a.Data, 'unrestricted_value":"' + a.AddressStr + '"', 'unrestricted_value":"' + replace(AddressStr, '"', '\"') + '"')
+-- update a set Data = replace(a.Data, 'unrestricted_value":"' + a.AddressStr + '"', 'unrestricted_value":"' + replace(AddressStr, '"', '\"') + '"')
+from client.Address a
+where AddressStr like '%"%'
+    and Data like '%unrestricted_value":"' + a.AddressStr + '"%'
+;
+/
+drop table if exists #a3
+;
+
+with a as 
+(
+    select distinct
+        va.AddressId
+        , a.ClientId
+        , replace(a.AddressStr, h.house, '') as Address
+        , va.City
+        , max(case 
+                when spl.value like N'% обл' 
+                    or spl.value like N'% респ' 
+                    or spl.value like N'% край' 
+                    or spl.value like N'респ %'
+                     or spl.value like N'% АО'
+                     or spl.value like N'% Югра'
+                then spl.value end) as Region
+        , h.house
+        , BuildingId
+        , LocationId
+        , RegionId
+        , Postcode
+        , AddressStr
+    from client.Address a
+    inner join client.vw_address va on va.AddressId = a.id
+    outer apply
+    (
+        select reverse(left( reverse(a.AddressStr), charindex(N',', reverse(a.AddressStr)))) as house
+    ) h
+    outer apply
+    (
+        select 
+            rtrim(ltrim(spl.value)) as value
+            , row_number() over (partition by a.AddressStr order by a.AddressStr) as Num
+        from string_split(replace(a.AddressStr, h.house, ''), ',') spl
+    ) spl
+    where a.AddressStr != ''
+        and a.Data is null
+    group by replace(a.AddressStr, h.house, ''), reverse(left( reverse(a.AddressStr), patindex(N'% д ,%', reverse(a.AddressStr)) + 1))
+        , va.AddressId, va.City, a.ClientId, h.house
+        , BuildingId
+        , LocationId
+        , RegionId
+        , Postcode
+        , AddressStr
+)
+
+,a2 as 
+(
+    select
+        a.AddressId
+        , replace(a.Address, isnull(Region + ', ', ''), '') as Address
+        , a.City
+        , spl.*
+        , a.ClientId
+        , row_number() over (partition by a.addressid order by spl.NUm desc) as ReversedNum
+        , a.house
+        , BuildingId
+        , LocationId
+        , RegionId
+        , Postcode
+        , AddressStr
+    from a
+    outer apply
+    (
+        select 
+            rtrim(ltrim(spl.value)) as value
+            , row_number() over (partition by replace(a.Address, isnull(Region, ''), '') order by a.Address) as Num
+        from string_split(replace(a.Address, isnull(Region + ', ', ''), ''), ',') spl
+    ) spl
+)
+
+,a3 as 
+(
+    select
+        a2.addressid
+        , a2.ClientId
+        , a2.address
+        , ltrim(rtrim(replace(a2.Address, ', ' + max(case when a2.ReversedNum = 1 then value end), ''))) as City
+        , ltrim(rtrim(max(case when a2.ReversedNum = 1 then value end))) as Street
+        , replace(a2.house, ', ', '') as house
+        , BuildingId
+        , LocationId
+        , RegionId
+        , Postcode
+        , AddressStr
+    from a2
+    group by a2.addressid, a2.address, a2.city, a2.ClientId, a2.house
+        , BuildingId
+        , LocationId
+        , RegionId
+        , Postcode
+        , AddressStr
+)
+
+select *
+into #a3
+from a3
+;
+create index IX_a on #a3(addressid) 
+/
+
+--select top 1
+--    a.AddressId
+update top (1000) adr set Data = concat('{"data":' + (
+        select 
+             null as area_with_type
+             , a.house
+             , '00' as okato
+             , '00' as oktmo
+             , a.PostCode as postal_code
+             , right('00' + cast(a.RegionId as nvarchar(3)), 2)  as region_kladr_id
+             , r.name as region_with_type
+             , a.city as city_with_type
+             , a.street as street_with_type
+        from (select 1) b(c)
+        for json auto, without_array_wrapper
+    ), ',"unrestricted_value":"', replace(a.AddressStr, '"', '\"'), '"}')
+    , ModifiedOn = getdate()
+    , ModifiedBy = 0x44
+from #a3 a
+inner join client.Address adr on adr.id = a.Addressid
+left join fias.dict.hierarchy r on  right('00' + r.regioncode, 2) = right('00' + cast(a.RegionId as nvarchar(3)), 2) 
+    and r.aolevel = 1
+where adr.Data is null
+;
+
+;
+/
+
+select *
+into #va
+from client.vw_address
+
+create or alter view client.vw_GetAddress as 
+select
+    AddressId
+    , ClientId
+    , AddressType
+    , PostalCode
+    , isnull(nullif(left(OKATO, 2), ''), '45') as OkatoRegion
+    , isnull(RegionCode, '77') as Region
+    , isnull(Region, N'Москва г') as RegionName
+    , isnull(City, N'Москва г') as City
+    , isnull(Street, N'Профсоюзная ул') as Street
+    , isnull(House, '1') as House
+    , null as Building
+    , Block 
+from client.vw_address
+/
+
+select top 100 *
+from client.vw_GetAddress

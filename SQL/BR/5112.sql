@@ -934,3 +934,6 @@ inner join dbo.DadataMango mp on mp."Address (стало)" = a.AddressStr
 where a.Data is null
 --    and a.id >= (@pack - 1) * @size
 --    and a.id < @pack * @size
+/
+
+
