@@ -21,7 +21,15 @@ where res.EquifaxRequestCreatedOn >= dateadd(month, -5, getdate())
         select 1 from wrh.vw_EquifaxCreditInfo ci
         where ci.EquifaxResponseId = res.EquifaxResponseId
             and ci.CreditInfoType = 2
-            and (ci.DateOpen > dateadd(month, -5, getdate()) or ci.CreditType = 3 and ci.CreditActive != 0) -- Нет незакрытой ипотеки
+            and ci.DateOpen >= dateadd(month, -5, getdate())
+    )
+    and not exists
+    (
+        select 1 from wrh.vw_EquifaxCreditInfo ci
+        where ci.EquifaxResponseId = res.EquifaxResponseId
+            and ci.CreditInfoType = 2
+            and ci.CreditType = 3 
+            and ci.CreditActive != 0 -- Нет незакрытой ипотеки
     )
     and exists
     (
@@ -46,12 +54,13 @@ from #requests r
 inner join wrh.vw_EquifaxCreditInfo ci on ci.EquifaxResponseId = r.EquifaxResponseId
 where ci.CreditInfoType = 2
     and CreditActive != 0
-    and ci.OverdueLine not like '[-]%'  -- С выгрузкой
+    and ci.OverdueLine like '[1-9B]%'  -- С выгрузкой
 group by r.EquifaxResponseId, r.LocalClientId
 having sum(case when ci.CreditType in (1, 2, 5, 14, 18, 19) then ci.SumDebit end) >= 300000 -- Исключили кредитки, ипотеку
 /
 
 select d.*
+into #fin
 from #debt d
 outer apply
 (
@@ -103,3 +112,32 @@ where isnull(cr.CrimeFound, 0) = 0
         where lcp.LocalClientId = d.LocalClientId
             and c.Status in (1, 3) 
     )
+
+/
+
+select
+    f.debt
+    , f.LocalClientId
+    , iif(lcp.Project = 1, N'Лайм', N'Манго') as Project
+    , lcp.ProjectClientId as ClientId
+    , isnull(cl.fio, cm.fio) as Fio
+    , isnull(cl.PhoneNumber, cm.PhoneNumber) as PhoneNumber
+    , isnull(cl.Email, cm.Email) as Email
+    , isnull(cl.SexKind, cm.SexKind) as Gender
+    , isnull(cl.substatusName, cm.substatusName) as Status
+    , datediff(year, isnull(cl.BirthDate, cm.BirthDate), cast(getdate() as date)) 
+    - iif(datepart(dy, isnull(cl.BirthDate, cm.BirthDate)) > datepart(dy, getdate()), 1, 0) as Age
+from #fin f
+inner join wrh.LocalClientProject lcp on lcp.LocalClientId = f.LocalClientId
+left join "BOR-LIME-DB".Borneo.Client.address al on al.ClientId = lcp.ProjectClientId
+    and lcp.Project = 1
+    and al.AddressType = 1
+left join Borneo.Client.address am on am.ClientId = lcp.ProjectClientId
+    and lcp.Project = 3
+    and am.AddressType = 1
+left join "BOR-LIME-DB".Borneo.Client.vw_client cl on cl.CLientId = lcp.ProjectClientId
+    and lcp.Project = 1
+left join Borneo.Client.vw_client cm on cm.CLientId = lcp.ProjectClientId
+    and lcp.Project = 3
+where lcp.project in (1, 3)
+    and isnull(al.RegionId, am.RegionId) = '54'
