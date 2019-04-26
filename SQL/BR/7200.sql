@@ -138,7 +138,7 @@ select
         when sl.Status in (3, 7) then 'Active'
         when sl.Status = 4 then 'Overdue'
         when sl.Status = 5 then 'Repaid'
-        when sl.Status = 6 then 'Cession'
+        when sl.Status = 6 then 'OnCession'
     end as Status
 into #statuses
 from prd.vw_statusLog sl
