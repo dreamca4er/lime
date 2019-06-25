@@ -10,7 +10,7 @@
 
 446209 Несколько % ставок
 
-453339
+453339 скидка посреди периода, без платежа
 415747 старый скидочный
 442649 Перерасчет процентов
 450145
@@ -364,20 +364,18 @@ with ppd as
                     , '"}', '')
                     , ',', char(10)) as PaymentSources
         , d.DebtAmount
-        , d.DebtPercent
+        , dp.DebtPercent
         , d.DebtFine
         , d.DebtCommission
-        , d.TotalDebt
+        , d.TotalDebt - rdf.DiscountAmount - rdf.PercentRecalcAmount as TotalDebt
         , d.PaidAmount
         , d.PaidPercent
         , d.PaidFine
         , d.PaidCommission
         , d.PaidProlong
         , d.TotalPaid
-        , isnull(lag(d.DebtPercent) over (order by rdf.Date), 0) as PrevDebtPercent
+        , isnull(lag(dp.DebtPercent) over (order by rdf.Date), 0) as PrevDebtPercent
         , isnull(lag(d.DebtFine) over (order by rdf.Date), 0) as PrevDebtFine
-        , isnull(lag(d.DiscountAmount)over (order by rdf.Date), 0) as PrevDiscountAmount
-        , isnull(lag(d.PercentRecalcAmount)over (order by rdf.Date), 0) as PrevPercentRecalcAmount
         , isnull(lag(d.PaidPercent)over (order by rdf.Date), 0) as PrevPaidPercent
         , isnull(lag(d.PaidFine)over (order by rdf.Date), 0) as PrevPaidFine
     from ReportDatesChargeFormulas rdf
@@ -390,6 +388,10 @@ with ppd as
             and p.PaymentDirection = 2
         for json auto, without_array_wrapper
     ) ps(PaymentSources)
+    outer apply
+    (
+        select d.DebtPercent - rdf.DiscountAmount - rdf.PercentRecalcAmount as DebtPercent
+    ) dp
 )
 
 select
@@ -422,11 +424,11 @@ outer apply
         values
         (null, format(prep.PrevDebtPercent, '#0.##'), 1)
         , (' - ', format(prep.PrevPaidPercent, '#0.##'), 2)
-        , (' - ', format(prep.PrevDiscountAmount, '#0.##'), 3)
-        , (' - ', format(prep.PrevPercentRecalcAmount, '#0.##'), 4)
-        , (' + ', prep.ChargedPercentFormula, 5)
-        , (' - ', format(prep.MidPeriodPercentRecalcAmount, '#0.##'), 6)
-        , (' - ', format(prep.MidPeriodDiscountAmount, '#0.##'), 7)             
+        , (' + ', prep.ChargedPercentFormula, 3)
+        , (' - ', format(prep.MidPeriodPercentRecalcAmount, '#0.##'), 4)
+        , (' - ', format(prep.MidPeriodDiscountAmount, '#0.##'), 5)
+        , (' - ', format(prep.DiscountAmount, '#0.##'), 6)
+        , (' - ', format(prep.PercentRecalcAmount, '#0.##'), 7)
     ) Comp (op, val, ord)
     where Comp.val != '0'
         and not (prep.PrevDebtPercent = prep.PrevPaidPercent and prep.PrevPaidPercent > 0 and comp.ord in (1, 2))
@@ -480,8 +482,6 @@ select
     , Amount as TotalPaid
     , null as PrevDebtPercent
     , null as PrevDebtFine
-    , null as PrevDiscountAmount
-    , null as PrevPercentRecalcAmount
     , null as PrevPaidPercent
     , null as PrevPaidFine
 from payments

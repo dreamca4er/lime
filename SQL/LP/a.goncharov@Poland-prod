@@ -1,0 +1,10 @@
+select count(*)
+from dbo.credits c
+outer apply
+(
+    select max(csh.DateCreated) as OverdueStart
+    from dbo.CreditStatusHistory csh
+    where csh.CreditId = c.id
+) os
+where c.status in (3, 10)
+    and datediff(d, os.OverdueStart, getdate()) > 89
