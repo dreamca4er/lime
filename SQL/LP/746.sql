@@ -1,6 +1,7 @@
-select 'a' + char(9) + 'b' 
-select
-    c.id as CreditId
+select --select char(9)
+    c.UserId
+    , fu.LastName + ' ' + fu.FirstName as UserName
+    , c.id as CreditId
     , cb.*
     , c.AgreementNumber
     , cast(c.DateStarted as date) as DateStarted
@@ -19,7 +20,11 @@ select
             , '=', '":')
             , ' ', ',"') as PaymentsList
     , (c.Amount - cb.Amount) / c.Amount as CurrentRepaymentOfDebt
-    , case when d.PromisedPayDay is null then 'No' else 'Yes' end as HasPromise
+    , case 
+        when d.PromisedPayDay >= cast(getdate() as date)
+        then 'Yes' 
+        else 'No' 
+    end as HasPromise
     , case when ufh.id is null then 'No' else 'Yes' end as IsFraud
     , case
         when dsh.ObjectionAnswered = 1 then 'Answer to objection'
@@ -32,7 +37,8 @@ select
         when 2 then 'Female'
     end as Gender
     , ha.*
-    , ra.*
+    , ra.ResidenceZip
+    , ra.ResidenceCity
     , ca.*
     , case when isnull(ra.ResidenceIsActive, 0) = 1 then 'Yes' else 'No' end as ResidenceIsActive
     , up.Phone
@@ -52,6 +58,7 @@ select
         when 3 then 'Head of the department'
         when 4 then 'Higher management team'
     end as JobType
+    , uc.LevelPosition
     , cast(uc.Income as nvarchar(20)) + ' net' as Income
     , case uc.MaritalStatus
         when 1 then 'Not married'
@@ -71,10 +78,7 @@ select
         then 'Yes' 
         else 'No' 
     end as IsTimeBarred
-    , case 
-        when datediff(d, os.OverdueStart, getdate()) > 365 * 3 
-        then dateadd(d, 365 * 3, os.OverdueStart)
-    end as TimeBarredDate
+    , dateadd(d, 365 * 3, os.OverdueStart) as TimeBarredDate
     , dsh.CollectionStartDate
     , case when dsh.ExecutionEntitlement = 1 then 'Yes' else 'No' end as ExecutionEntitlement
     , dsh.BailiffSentDate
@@ -239,4 +243,3 @@ outer apply
 where c.status in (3, 10)
     and datediff(d, os.OverdueStart, getdate()) > 89
     and isnull(cp.IsNeededEntry, 1) = 1
-/
