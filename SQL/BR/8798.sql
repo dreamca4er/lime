@@ -36,8 +36,8 @@ where (exists
         select 1 from BorneoFiles.doc.ClientDocuments cd
         where cd.stream_id = cdm.FileStreamId
     ))
-    and CreatedOn >= '20180401'
-    and CreatedOn <= '20180601'
+    and CreatedOn >= '20180901'
+    and CreatedOn <= '20181001'
     and not exists
     (
         select 1 from br8798 b2
@@ -45,19 +45,19 @@ where (exists
     )
 /
 
-select count(*) -- delete top (10000) cd -- select top 1 cdm.*
+select count(*) -- delete top (10000) cd -- select top 10 cdm.*
 from doc.ClientDocuments cd
 inner join dbo.br8798_check c on c.FileStreamId = cd.stream_id
     and c.Filesize > 0
 left join doc.ClientDocumentMetadata cdm on cdm.FileStreamId = cd.stream_id
---where c.ClientId = 1510232
+where c.ClientId in (1351028)
 
-select count(*) -- delete top (10000) cd -- select top 1 cdm.*
+select count(*) -- delete top (10000) cd -- select top 10 cdm.*
 from BorneoFiles.doc.ClientDocuments cd
 inner join dbo.br8798_check c on c.FileStreamId = cd.stream_id
     and c.Filesize > 0
 left join doc.ClientDocumentMetadata cdm on cdm.FileStreamId = cd.stream_id
---where c.ClientId = 1893261
+where c.ClientId in (2346471)
 /
 set nocount on
 ;
@@ -136,12 +136,15 @@ from br8798 b
 inner join doc.ClientDocumentMetadata cdm on b.FileStreamId = cdm.FileStreamId
 left join doc.ClientDocuments cd on cd.stream_id = cdm.FileStreamId
 left join BorneoFiles.doc.ClientDocuments bfcd on bfcd.stream_id = cdm.FileStreamId
-where cdm.ClientId = 1893261
+where bfcd.stream_id is not null
 order by cdm.CreatedOn desc
+-- 2201557
+-- 1196872
 /
 
 select  
     dateadd(month, datediff(month, 0, cast(cdm.CreatedOn as date)), 0) as mnth
+    , count(*)
     , sum(cd.cached_file_size) / power(1024.0, 3) as filessize
     , DB
 from #cd cd

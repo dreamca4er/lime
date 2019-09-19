@@ -1,0 +1,23 @@
+select
+    c.clientid
+    , c.fio
+    , c.PhoneNumber
+    , p.Productid
+    , p.ContractNumber
+    , th.MaxAmount
+    , p.StatusName
+from prd.vw_product p
+inner join client.vw_client c on c.clientid = p.ClientId
+inner join pmt.Payment pay on pay.ContractNumber = p.ContractNumber
+outer apply
+(
+    select max(th.MaxAmount) as MaxAmount
+    from client.vw_TariffHistory th
+    where th.ClientId = p.ClientId
+        and th.IsLatest = 1
+) th
+where 1=1 
+    and p.PaymentWay = 2
+--    and p.Status = 2
+    and p.Productid in (413940,413185,414506,412954,413615,412579,412591,412723,414578,413350,413692,412925,413567,413776,413040,414732,414750,414762,413344,413816,413449,414761,412848,414256,412959,413179,413781,413517,414565,412658,412994,413701,414497,413316,413887,412783,413428,414051,414661,413667,413256,413270,413496,413697,413224,413628,412603,412791,413191,413986,414157,413509,413193,413928,413529,414675,412947,412876,413025,412716,412774,413107,414728,413188,412859,412971,413018,413081,413078,413088,413236,413693
+,414074,414208,414245,414754,414759,414755,414757,414777,414797,414796,414798,414800) 
