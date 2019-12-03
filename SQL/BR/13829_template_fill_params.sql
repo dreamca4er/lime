@@ -61,3 +61,15 @@ where not exists
         where cte2.TemplateId = cte.TemplateId
             and cte2.ParameterNum > cte.ParameterNum
     )
+/
+
+
+with c(list) as 
+(
+    select ', ' + t.Field as 'text()'
+    from (values ('1'), ('2')) t(Field)
+    for xml path('')
+)
+
+select stuff(list, 1, 1, '')
+from c
