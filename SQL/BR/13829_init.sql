@@ -304,6 +304,8 @@ EXEC sys.sp_addextendedproperty
 
 insert into rr.ConditionsTypes (Name) select N'Общие условия'
 insert into rr.ConditionsTypes (Name) select N'Правила предоставления микрозаймов'
+insert rr.ConditionsTypes (Name) select N'Информация о процентных ставках'
+insert rr.ConditionsTypes (Name) select N'Информация о размере ПВКВ'
 ;
 
 --drop table if exists rr.CommonConditions
