@@ -1,0 +1,12 @@
+{
+     "srv-bi":
+        {
+            "server": "srv-bi"
+            , "database": "master"
+            , "uid": "some_user"
+            , "pwd": "somme_path"
+        },
+      "webhook_url": "some_needed_url",
+      "ok_icon": "https://pic.dreamca4er.ru/chrome_2019-09-11_21-40-40.png",
+      "bad_icon": "https://pic.dreamca4er.ru/chrome_2019-09-11_21-41-41.png"
+}

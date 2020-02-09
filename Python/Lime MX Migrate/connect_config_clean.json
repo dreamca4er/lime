@@ -1,0 +1,16 @@
+{
+  "Project_name": {
+      "server": "",
+      "database": "",
+      "uid": "",
+      "pwd": "",
+      "auth_url": "<urlpart>/PineryLime/SecurityTokenService/identity/connect/token",
+      "api_url": "<urlpart>/PineryLime/TestApiService/api",
+      "admin_login": "admin",
+      "admin_pass": "Password123",
+      "redis_host": "",
+      "redis_port":  ,
+      "recalc_icon": "http://cdn11.bigcommerce.com/s-3qkcoi/images/stencil/1280x1280/products/595/673/VKNOBSTICKER-MEX__74320.1528149113.png",
+      "time_diff": -13
+  }
+}

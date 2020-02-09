@@ -1,0 +1,69 @@
+{
+    "srv-bi": {
+        "database": "Reports",
+        "pwd": "<some_pwd>",
+        "server": "srv-bi",
+        "uid": "<some_uid>"
+    },
+    "sheet_name": "Детализация",
+    "header_format": {
+        "bold": "True",
+        "font_name": "Arial",
+        "font_size": 8,
+        "text_h_align": 2,
+        "text_v_align": 1,
+        "text_wrap": "True",
+        "bottom": 1,
+        "top": 1,
+        "left": 1,
+        "right": 1
+    },
+    "columns":
+      [
+        {"name": "Id Клиента", "index": 1, "red": 255, "green": 182, "blue": 193}
+        , {"name": "ФИО", "index": 2, "red": 255, "green": 182, "blue": 193}
+        , {"name": "Id Займа", "index": 3, "red": 255, "green": 222, "blue": 173}
+        , {"name": "Номер договора", "index": 4, "red": 255, "green": 222, "blue": 173}
+        , {"name": "Дата создания", "index": 5, "red": 255, "green": 222, "blue": 173, "is_date":  "True"}
+        , {"name": "Дата активации", "index": 6, "red": 255, "green": 222, "blue": 173, "is_date":  "True"}
+        , {"name": "Срок займа", "index": 7, "red": 255, "green": 222, "blue": 173}
+        , {"name": "Сумма займа", "index": 8, "red": 255, "green": 222, "blue": 173}
+        , {"name": "Стоимость страховки", "index": 9, "red": 255, "green": 222, "blue": 173}
+        , {"name": "ИТОГО сумма займа со страховкой", "index": 10, "red": 255, "green": 222, "blue": 173}
+        , {"name": "Сумма к уплате по договору", "index": 11, "red": 255, "green": 222, "blue": 173}
+        , {"name": "Ставка по займу, %", "index": 12, "red": 255, "green": 222, "blue": 173}
+        , {"name": "Канал выдачи займа", "index": 13, "red": 255, "green": 222, "blue": 173}
+        , {"name": "ПСК по договору", "index": 14, "red": 255, "green": 222, "blue": 173}
+        , {"name": "Тип займа (наш)", "index": 15, "red": 255, "green": 222, "blue": 173}
+        , {"name": "Вид займа ЦБ", "index": 16, "red": 255, "green": 222, "blue": 173}
+        , {"name": "Тело (ост)", "index": 17, "red": 252, "green": 253, "blue": 218}
+        , {"name": "Тело активное (ост)", "index": 18, "red": 252, "green": 253, "blue": 218}
+        , {"name": "Тело просроч (ост)", "index": 19, "red": 252, "green": 253, "blue": 218}
+        , {"name": "Проценты (ост)", "index": 20, "red": 252, "green": 253, "blue": 218}
+        , {"name": "Проценты активные (ост)", "index": 21, "red": 252, "green": 253, "blue": 218}
+        , {"name": "Проценты просроченные (ост)", "index": 22, "red": 252, "green": 253, "blue": 218}
+        , {"name": "Комиссия за выдачу (ост)", "index": 23, "red": 252, "green": 253, "blue": 218}
+        , {"name": "Тело долга (опл)", "index": 24, "red": 143, "green": 188, "blue": 139}
+        , {"name": "Проценты (опл)", "index": 25, "red": 143, "green": 188, "blue": 139}
+        , {"name": "Проценты (сторно)", "index": 26, "red": 143, "green": 188, "blue": 139}
+        , {"name": "Проценты (прощение)", "index": 27, "red": 143, "green": 188, "blue": 139}
+        , {"name": "Проценты (скидка)", "index": 28, "red": 143, "green": 188, "blue": 139}
+        , {"name": "Комиссия за выдачу (опл)", "index": 29, "red": 143, "green": 188, "blue": 139}
+        , {"name": "Комиссия за продление (опл)", "index": 30, "red": 143, "green": 188, "blue": 139}
+        , {"name": "Комиссия за оплату (опл)", "index": 31, "red": 143, "green": 188, "blue": 139}
+        , {"name": "Штраф (опл)", "index": 32, "red": 143, "green": 188, "blue": 139}
+        , {"name": "Госпошлина (опл)", "index": 33, "red": 143, "green": 188, "blue": 139}
+        , {"name": "Переплата", "index": 34, "red": 143, "green": 188, "blue": 139}
+        , {"name": "Текущий статус", "index": 35, "red": 197, "green": 217, "blue": 242}
+        , {"name": "Дата присвоения текущего статуса", "index": 36, "red": 197, "green": 217, "blue": 242, "is_date":  "True"}
+        , {"name": "Статус займа на конец периода", "index": 37, "red": 149, "green": 179, "blue": 215}
+        , {"name": "Дата присвоения статуса конца периода", "index": 38, "red": 149, "green": 179, "blue": 215, "is_date":  "True"}
+        , {"name": "Дней просрочки", "index": 39, "red": 149, "green": 179, "blue": 215}
+        , {"name": "Был продлен", "index": 40, "red": 149, "green": 179, "blue": 215}
+        , {"name": "Диапазон просроч", "index": 41, "red": 221, "green": 160, "blue": 221}
+        , {"name": "Ставка по резервам, %", "index": 42, "red": 221, "green": 160, "blue": 221}
+        , {"name": "Резерв по ОД", "index": 43, "red": 221, "green": 160, "blue": 221}
+        , {"name": "Резерв по %", "index": 44, "red": 221, "green": 160, "blue": 221}
+        , {"name": "Резерв комиссии", "index": 45, "red": 221, "green": 160, "blue": 221}
+      ]
+}

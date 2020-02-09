@@ -1,0 +1,23 @@
+[
+    {
+        "CommandType": "Prd.Domain.Commands.MoneyReceivedCommand, Prd.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "name": "MoneyReceive",
+        "red": 195,
+        "green": 217,
+        "blue": 242
+    },
+    {
+        "CommandType": "Prd.Domain.Commands.PausedProductCommand, Prd.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "name": "PauseProduct",
+        "red": 253,
+        "green": 215,
+        "blue": 130
+    },
+    {
+        "CommandType": "Prd.Domain.Commands.ProlongCommand, Prd.Domain, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+        "name": "ProlongProduct",
+        "red": 210,
+        "green": 236,
+        "blue": 209
+    }
+]

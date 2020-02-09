@@ -1,0 +1,13 @@
+{
+   "project":
+        {
+            "server": "ip,port"
+            , "database": "database_name"
+            , "uid": "db_login"
+            , "pwd": "db_password"
+            , "auth_url": "https://<project>admin.lime.local/Pinery<project>/SecurityTokenService/identity/connect/token"
+            , "api_url": "https://<project>admin.lime.local/Pinery<project>/TestApiService/api"
+            , "admin_login": "your_admin_login"
+            , "admin_pass": "your_admin_password"
+        }
+}

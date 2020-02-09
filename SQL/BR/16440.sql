@@ -11,8 +11,8 @@ from bi.ProjectConfig
 ;
 
 declare
-    @dateFrom date = '20191201'
-    , @dateTo date = '20200101'
+    @dateFrom date = '20190101'
+    , @dateTo date = '20190201'
 ;
 while @dateFrom != '20200301'
 begin
@@ -314,10 +314,5 @@ from d
     set @dateFrom = dateadd(month, 1, @dateFrom)
     set @dateTo = dateadd(month, 1, @dateFrom)
 end
-/
 
-select
-    dateadd(month, datediff(month, cast('19000101' as datetime), CreatedOn), cast('19000101' as datetime))
-    , count(distinct datepart(dd, CreatedOn))
-from[bi].[CardPaymentsHolderCheck]
-group by dateadd(month, datediff(month, cast('19000101' as datetime), CreatedOn), cast('19000101' as datetime))
+

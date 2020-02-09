@@ -1,0 +1,1 @@
+collection_tool.exe --embedded-db-credentials
