@@ -7,7 +7,7 @@
 --        , r.DateB
 --        , r.DateE
 --        , r.Status
---    from "SRV-BI".dbo.Report r
+--    from "SRV-BI".Reports.dbo.Report r
 --    where r.ProjectId = 1
 --        and r.IsArchiveStatus = 2
 --        and r.DateB = '20190101'
@@ -126,8 +126,8 @@ with m as
         order by long.BuiltOn desc
     ) long
     where p.Status > 2
-        and cast(p.CreatedOn as date) <= '20190131'
-        and (p.DatePaid is null or cast(p.DatePaid as date) >= '20190131')
+        and cast(p.CreatedOn as date) between '20190131' and '20191231'
+--        and (p.DatePaid is null or cast(p.DatePaid as date) >= '20190131')
 )
 
 /*
@@ -193,29 +193,6 @@ with m as
     ) AS PivotTable
 )
 */
-insert borneo.dbo.br17373
+insert into borneo.dbo.br17373_2
 select *
 from p
-
-
-/
-select count(*)
-from prd.vw_product p
-where cast(DatePaid as date) between '20190101' and '20191231'
-    and PrivilegeFactor < 1
-    and not exists
-    (
-        select 1 from prd.vw_statusLog sl
-        where sl.ProductId = p.ProductId
-            and sl.Status in (4)
-    ) 
-/
-
---select top 100 
---    dd.ProductId
---    , po.DateOperation
-
-select top 10 *
-from bi.ProductStatusArchive
-order by ArchiveDate desc
-
