@@ -1,0 +1,1 @@
+select * from master.dbo.vw_AllTodayJobErrors
