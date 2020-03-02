@@ -1,7 +1,7 @@
---select *
---into dbo.br17373
+--select top (0) *
+--into dbo.br17373_3
 --from "BOR-LIME-N1-DB".borneo.dbo.br17373
-
+--select * from dbo.br17373_3
 drop table if exists #inf
 ;
 with r as 
@@ -37,9 +37,10 @@ with r as
         )
 )
 
-select *
-into #inf
+
+select count(*) 
 from inf
+where DateE = '2019-12-31'
 
 alter table #inf add primary key(ProductId, DateE) 
 ; 
@@ -120,7 +121,8 @@ select *
 into dbo.br1737inf
 from inf
 /
-select
+
+select 
     "ФИО/Наименование заемщика"
     , "Серия паспорта"
     , "Номер паспорта"
@@ -205,6 +207,5 @@ select
     , iif("Дней просрочки на 2019-10-31" < 0, 0, "Дней просрочки на 2019-10-31") as "Дней просрочки на 2019-10-31"
     , iif("Дней просрочки на 2019-11-30" < 0, 0, "Дней просрочки на 2019-11-30") as "Дней просрочки на 2019-11-30"
     , iif("Дней просрочки на 2019-12-31" < 0, 0, "Дней просрочки на 2019-12-31") as "Дней просрочки на 2019-12-31"
-from dbo.br17373 br
-left join dbo.br1737inf inf on inf.ProductId = br.ProductId
-
+from dbo.br17373_3 br
+inner join dbo.br1737inf inf on inf.ProductId = br.ProductId

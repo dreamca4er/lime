@@ -90,6 +90,8 @@ with m as
         , arch.FirstOverdueStart as "Дата образования просроченной задолженности по договору"
         , p.ProductId
         , p.clientid
+        , s.Status
+        , s.StartedOn
     from prd.vw_product p
     inner join client.vw_Client c on c.clientid = p.ClientId
     left join prd.vw_Insurance i on i.LinkedLoanId = p.Productid
@@ -125,11 +127,27 @@ with m as
         where long.ProductId = p.Productid
         order by long.BuiltOn desc
     ) long
-    where p.Status > 2
-        and cast(p.CreatedOn as date) between '20190131' and '20191231'
---        and (p.DatePaid is null or cast(p.DatePaid as date) >= '20190131')
+    outer apply
+    (
+        select top 1 
+            s.Status
+            , s.StartedOn
+        from prd.vw_statuslog s
+        where s.ProductId = p.productId
+            and s.StartedOn <= '20190131'
+        order by s.StartedOn desc
+    ) s
+    where cast(p.CreatedOn as date) >= '20190131' -- Позже исключим займы, которые не попали в портфель  
+        or
+        (
+            cast(p.CreatedOn as date) < '20190131'
+            and s.Status not in (1, 5, 7, 8)
+        )
 )
 
+select Status, StartedOn
+from p
+/
 /*
 ,od as 
 (
@@ -193,6 +211,7 @@ with m as
     ) AS PivotTable
 )
 */
-insert into borneo.dbo.br17373_2
+insert into borneo.dbo.br17373_3
 select *
+--into borneo.dbo.br17373_3
 from p

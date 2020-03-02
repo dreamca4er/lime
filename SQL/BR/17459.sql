@@ -77,9 +77,7 @@ create clustered index IX_paid_ProductId on stuff.dbo.paid(productId)*/
 --from bi.ProductStatusArchive arch
 --where arch.ProductId = p.ProductId
 --    and arch.Status = 4
---order by arch.ArchiveDate, StartedOn 
-
-
+--order by arch.ArchiveDate, StartedOn
 
 with a as 
 (
@@ -108,9 +106,8 @@ with a as
     ) v(price, y, m)
 )
 
-select 
-    p.ProductId
-    , concat(c.LastName, ' ', c.FirstName, ' ', c.FatherName) as "ФИО/Наименование заемщика"
+select
+    concat(c.LastName, ' ', c.FirstName, ' ', c.FatherName) as "ФИО/Наименование заемщика"
     , N'ФЛ' as "Тип клиента (ФЛ/ИП/ЮЛ)"
     , c.INN as "ИНН"
     , c.Passport as "Серия и номер паспорта (для ФЛ)"
@@ -136,32 +133,30 @@ select
     , isnull(paid.PaidNotOsv, 0) - dp.DVZPrice as "Графа 22 - графа 23, в рублях"
     , (isnull(paid.PaidNotOsv, 0) - dp.DVZPrice) / nullif(isnull(cbfo.TotalDebt, ocb.OldOverdueDebt), 0) as "Отношение графы 24 к графе 21, в %"
     , osv.AssignDate as "Дата начала стадии взыскания"
-    , datediff(d, oos.OsvOverdueStart, osv.AssignDate) + 1 as "Количество дней просроченной задолженности в момент начала стадии взыскания"
+    , iif(osv.productId is not null, 180, null) as "Количество дней просроченной задолженности в момент начала стадии взыскания"
     , cbfosv.TotalDebt as "Просроченная задолженность в момент начала стадии взыскания (ОД, %, пени), в рублях"
-    , paid.PaidOsv as "Сумма просроченной задолженности, которую удалось взыскать, в рублях"
-    , isnull(osv.Cost, 0) as "Затраты на реализацию стадии взыскания, в рублях"
-    , isnull(paid.PaidOsv, 0) - isnull(osv.Cost, 0) as "Графа 29 - графа 30, в рублях"
-    , (isnull(paid.PaidOsv, 0) - isnull(osv.Cost, 0)) / nullif(osv.Cost, 0) as "Отношение графы 31 к графе 28, в %"
-    , ocb.OldOverdueDebt
+    , iif(osv.productId is not null, paid.PaidOsv, null) as "Сумма просроченной задолженности, которую удалось взыскать, в рублях"
+    , (gf.GovFee + 480.5) as "Затраты на реализацию стадии взыскания, в рублях"
+    , isnull(paid.PaidOsv, 0) - (gf.GovFee + 480.5) as "Графа 29 - графа 30, в рублях"
+    , (isnull(paid.PaidOsv, 0) - isnull(gf.GovFee + 480.5, 0)) / (gf.GovFee + 480.5) as "Отношение графы 31 к графе 28, в %"
 from prd.vw_product p
 inner join client.vw_Client c on c.clientid = p.ClientId
 left join stuff.dbo.osv on osv.Productid = p.ProductId
 left join stuff.dbo.paid on paid.ProductId = p.ProductId
 outer apply
 (
-    select top 1 a.Address
+    select top 1 a.Address + isnull(N', кв. ' + a.Apartment, '') as Address
     from client.vw_address a
     where a.ClientId = p.ClientId
     order by a.AddressType desc
 ) addr
 outer apply
 (
-    select top 1 
-        cast(arch.StartedOn as date) as FirstOverdueStart
-    from bi.ProductStatusArchive arch
-    where arch.ProductId = p.ProductId
-        and arch.Status = 4
-    order by arch.ArchiveDate, StartedOn 
+    select top 1 sl.StartedOn as FirstOverdueStart
+    from prd.vw_statusLog sl
+    where sl.ProductId = p.productId
+        and sl.Status = 4
+    order by sl.StartedOn
 ) arch
 outer apply
 (
@@ -188,6 +183,7 @@ outer apply
 (
     select top 1 
         (cb.TotalDebt - cb.Commission) * -1 as TotalDebt
+        , cb.TotalDebt * -1 as DebtWithCommission 
     from bi.CreditBalance cb
     where cb.ProductId = p.Productid
         and cb.InfoType = 'debt'
@@ -195,17 +191,6 @@ outer apply
         and cb.DateOperation >= '20180225'
     order by cb.DateOperation desc
 ) cbfosv
-outer apply
-(
-    select top 1 
-        cast(arch.StartedOn as date) as OsvOverdueStart
-        , arch.Status
-    from bi.ProductStatusArchive arch
-    where arch.ProductId = p.ProductId
-        and arch.StartedOn < osv.AssignDate
-        and arch.ArchiveDate >= osv.AssignDate
-    order by arch.ArchiveDate, StartedOn desc
-) oos
 left join a on a.y = year(arch.FirstOverdueStart)
     and a.m = month(arch.FirstOverdueStart)
 outer apply
@@ -225,9 +210,21 @@ outer apply
     from "OLD-PROJECT-DB".Limezaim_Website.dbo.CreditBalances cb
     where cb.CreditId = p.ProductId
         and dateadd(d, -1, cb.Date) = arch.FirstOverdueStart
-        and cbfo.TotalDebt is null
     order by cb.Date desc
 ) ocb
+outer apply
+(
+    select 
+        case 
+            when cbfosv.DebtWithCommission < 20000
+            then (select max(v) from (values (200), (cbfosv.DebtWithCommission * 0.04)) a(v))
+            when cbfosv.DebtWithCommission >= 20000 and cbfosv.DebtWithCommission < 100000
+            then 400 + (cbfosv.DebtWithCommission - 20000) * 0.03
+            when cbfosv.DebtWithCommission >= 100000 and cbfosv.DebtWithCommission < 200000
+            then 1600 + (cbfosv.DebtWithCommission - 100000) * 0.02
+            when cbfosv.DebtWithCommission >= 200000 and cbfosv.DebtWithCommission < 1000000
+            then 2600 + (cbfosv.DebtWithCommission - 200000) * 0.01
+        end as GovFee
+) gf
 where p.Status > 2
     and (arch.FirstOverdueStart between '20190101' and '20191231' or osv.Productid is not null)
-    and isnull(oos.Status, 4) = 4
