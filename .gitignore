@@ -1,2 +1,3 @@
 config.json
 connect_config.json
+*.pyc

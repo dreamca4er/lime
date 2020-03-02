@@ -1,6 +1,12 @@
+altgraph==0.17
+borneo-tools>1.5
 certifi>=2019.11.28
-chardet>=3.0.4
-idna>=2.8
-pyodbc>=4.0.28
-requests>=2.22.0
-urllib3>=1.25.8
+chardet==3.0.4
+future==0.18.2
+idna==2.9
+pefile==2019.4.18
+PyInstaller==3.6
+pyodbc>=4.0.30
+pywin32-ctypes==0.2.0
+requests==2.23.0
+urllib3==1.25.8

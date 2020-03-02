@@ -1,5 +1,6 @@
 import pyodbc
 import json
+from borneo import config_path, global_config
 
 
 class RedistrRunningError(RuntimeError):
@@ -12,7 +13,7 @@ def is_redistr_active(curs):
         raise RedistrRunningError("Redistribution is running")
 
 
-def get_all_users(curs, prj):
+def get_all_users(curs):
     print('Getting users')
     tsql = """with op as 
             (
@@ -84,6 +85,7 @@ def remove_from_group(curs, collector_id):
     tsql = 'delete cg from collector.CollectorGroup cg where CollectorId = ?'
     return curs.execute(tsql, collector_id).rowcount
 
+
 def add_to_group(curs, collector_id, group_id):
     tsql = """
             merge Collector.CollectorGroup as target
@@ -100,19 +102,41 @@ def add_to_group(curs, collector_id, group_id):
 
 
 def db_connect(connect_cfg):
+    """
+    Функция db_connect работает по двум схемам:
+    1. принимает на вход json-набор параметров (из локального файла connect_config.json, старая схема)
+    2. принимает на вход имя проекта из глобального конфиг-файла borneo_config.json
+    """
+    project_config = None
+    if type(connect_cfg) is str and global_config:
+        try:
+            project_config = global_config[connect_cfg]
+        except KeyError:
+            print(f'There is no project with a name "{connect_cfg}" in {config_path}.\n')
+            try:
+                json.loads(connect_cfg)
+            except ValueError:
+                raise ValueError(f'{connect_cfg} is not a project name nor a valid json')
+    elif type(connect_cfg) is dict:
+        project_config = connect_cfg
+    else:
+        raise TypeError('db_connect function accepts only str and dict as parameter type')
     try:
-        cnxn = pyodbc.connect(driver='{SQL Server Native Client 11.0}', **connect_cfg)
+        cnxn = pyodbc.connect(driver='{SQL Server Native Client 11.0}', **project_config)
     except:
-        cnxn = pyodbc.connect(driver='{ODBC Driver 13 for SQL Server}', **connect_cfg)
+        cnxn = pyodbc.connect(driver='{ODBC Driver 13 for SQL Server}', **project_config)
     cnxn.autocommit = True
     return cnxn.cursor()
 
 
 if __name__ == "__main__":
-    with open('connect_config.json', 'r') as f:
-        config = json.load(f)
+    if not global_config:
+        with open('connect_config.json', 'r') as f:
+            config = json.load(f)
+    else:
+        config = global_config
     project = "test"
-    cursor = db_connect(config[project])
+    cursor = db_connect(project)
     try:
         print('result', enable_or_disable_collector(cursor, 10000))
     except RuntimeError as e:

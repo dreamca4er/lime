@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import borneo.db as db
 import borneo.api as ba
+from borneo import global_config
 import json
 import datetime as dt
 import sys
@@ -42,11 +43,9 @@ pathname = os.path.dirname(sys.argv[0])
 script_path = os.path.abspath(pathname)
 check_script_path = os.path.join(script_path, 'check_script.sql')
 log_path = os.path.join(script_path, 'execution_log.txt')
-config_path = os.path.join(script_path, 'connect_config.json')
 
-with open(config_path, 'r') as f:
-    all_configs = json.loads(f.read())
-    config = all_configs['konga']
+project_name = 'konga'
+config = global_config[project_name]
 
 with open(check_script_path, 'r') as s:
     query = s.read()
@@ -68,8 +67,6 @@ operation_date = (dt.datetime.now() + relativedelta(months=-8)).isoformat()
 
 cursor = db.db_connect(config)
 method_path = config['api_url'] + '/Product/RecalculateProductsById'
-l = config['admin_login']
-p = config['admin_pass']
 headers = {}
 
 logging.basicConfig(filename=log_path, filemode='w', format='%(asctime)s %(message)s', datefmt=my_format)
@@ -124,7 +121,7 @@ for calc_iter in range(0, calc_iters):
     if calc_iter % 10 == 0:
         # Перезапрашиваем токен
         try:
-            headers = ba.get_token_v2(config=config)
+            headers = ba.get_token_v2(project_name)
         except RuntimeError:
             print('Error getting token')
             headers = {}

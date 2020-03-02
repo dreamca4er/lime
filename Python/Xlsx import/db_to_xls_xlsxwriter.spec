@@ -4,9 +4,9 @@ block_cipher = None
 
 
 a = Analysis(['db_to_xls_xlsxwriter.py'],
-             pathex=['./'],
+             pathex=['./', './venv/lib/site-packages'],
              binaries=[],
-             datas=[('config.json', '.'), ('query.sql', '.')],
+             datas=[],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
@@ -19,19 +19,14 @@ pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
           a.scripts,
+          a.binaries,
+          a.zipfiles,
+          a.datas,
           [],
-          exclude_binaries=True,
-          name='CB_detail',
+          name='db_to_xls',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          console=True )
-coll = COLLECT(exe,
-               a.binaries,
-               a.zipfiles,
-               a.datas,
-               strip=False,
-               upx=True,
-               upx_exclude=[],
-               name='CB_detail')
+          runtime_tmpdir=None,
+          console=True)

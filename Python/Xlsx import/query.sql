@@ -10,11 +10,14 @@ select
     , d.InsuranceCost
     , d.AmountWithInsuranceCost
     , d.PayUnderContract
-    , d.PercentPerDay
+    , d.PrivilegeTypeName
+    , d.PercentPerDayWithoutDiscount
+    , d.PrivilegeFactor
     , d.PaymentWayName
     , d.PSK
     , d.ppt
     , d.TypeFlagName
+	, d.PDN
     , d.LeftAmount
     , d.ActiveAmt
     , d.OverdueAmt
@@ -36,13 +39,17 @@ select
     , d.CurrentStatusName
     , d.CurrentStatusStartedOn
     , d.StatusNameOnEndPeriod
+    , d.CBStatusNameOnEndPeriod
     , d.StatusStartedOnEndPeriod
     , d.OverdueDays
     , d.WasProlonged
+    , d.ContractDatePaid
+    , d.DatediffContractDatePaid
+    , d.DatediffContractDatePaidGroup
     , d.ReserveName
     , d.Pct
     , d.ReserveAmt
     , d.ReservePct
     , d.ReserveCom
-from dbo.ReportDetail d
-where ReportId = ?ReportId
+from Reports.dbo.ReportDetail d
+where ReportId = ?

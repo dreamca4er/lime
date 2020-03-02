@@ -8,7 +8,6 @@ a = Analysis(['command_tool.py'],
              binaries=[],
              datas=[('command_template.sql', '.')
              , ('command_types.json', '.')
-             , ('connect_config.json', '.')
              , ('existing_operations.sql', '.')
              , ('generate_commands.sql', '.')
              , ('save_changes.sql', '.')

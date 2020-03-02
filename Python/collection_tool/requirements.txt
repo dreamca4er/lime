@@ -1,12 +1,12 @@
 altgraph==0.17
-borneo-tools
+borneo-tools>1.5
 certifi>=2019.11.28
 chardet==3.0.4
 future==0.18.2
 idna==2.8
 pefile==2019.4.18
 PyInstaller==3.6
-pyodbc==4.0.28
+pyodbc>=4.0.28
 PyQt5==5.14.1
 PyQt5-sip==12.7.1
 pywin32-ctypes==0.2.0

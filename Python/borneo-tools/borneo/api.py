@@ -3,11 +3,12 @@ import ast
 import getpass
 import json
 import datetime
+from borneo import global_config, config_path
 
 cert = False
 
 
-def get_token_v2(auth_url=None, login=None, password=None, config=None):
+def get_token_v2(api_param):
 
     def check_response(resp):
         if all(elem in resp for elem in ["access_token", 'token_type']):
@@ -16,35 +17,41 @@ def get_token_v2(auth_url=None, login=None, password=None, config=None):
             return {"Authorization": token_type + ' ' + access_token}
         else:
             raise RuntimeError(json.dumps(resp))
-    config = config or {}
-    _auth_url = auth_url or config.get('auth_url', None)
-    _login = login or config.get('admin_login', None)
-    _password = password or config.get('admin_pass', None)
-    if None in [_auth_url, _login, _password]:
-        raise RuntimeError('Login or password or auth url was not provided')
-    possible_client_ids = ['AdminAPI', 'AdminApi']
-    data = {
-        "grant_type": "password"
-        , "username": _login
-        , "password": _password
-        , "client_secret": "secretPassword"
-        , "scope": "openid AdminApiScope offline_access"
-    }
-    print(f'Getting token for {_login} from {_auth_url}')
-    for client_id in possible_client_ids:
-        print(f'Trying client_id = {client_id}...')
-        data['client_id'] = client_id
-        response = ast.literal_eval(requests.post(_auth_url, data=data, verify=cert).content.decode())
-        try:
-            return check_response(response)
-        except RuntimeError as re:
-            dict_re = json.loads(str(re))
-            err = dict_re.get('error', None)
-            if err == 'invalid_client':
-                continue
-            else:
-                raise re
-    raise RuntimeError('Failed getting token attempts with all client_ids')
+    config = None
+    try:
+        config = global_config[api_param]
+    except KeyError as e:
+        raise KeyError(f'Глобальный конфиг файл {config_path} не содержит проекта "{api_param}"')
+    except TypeError:
+        config = api_param or {}
+        _auth_url = config.get('auth_url')
+        _login = config.get('admin_login')
+        _password = config.get('admin_pass')
+        if None in [_auth_url, _login, _password]:
+            raise RuntimeError(f'Login or password or auth url was not provided (project "{api_param}")')
+        possible_client_ids = ['AdminAPI', 'AdminApi']
+        data = {
+            "grant_type": "password"
+            , "username": _login
+            , "password": _password
+            , "client_secret": "secretPassword"
+            , "scope": "openid AdminApiScope offline_access"
+        }
+        print(f'Getting token for {_login} from {_auth_url}')
+        for client_id in possible_client_ids:
+            print(f'Trying client_id = {client_id}...')
+            data['client_id'] = client_id
+            response = ast.literal_eval(requests.post(_auth_url, data=data, verify=cert).content.decode())
+            try:
+                return check_response(response)
+            except RuntimeError as re:
+                dict_re = json.loads(str(re))
+                err = dict_re.get('error', None)
+                if err == 'invalid_client':
+                    continue
+                else:
+                    raise re
+        raise RuntimeError('Failed getting token attempts with all client_ids')
 
 
 def generate_token_header(token):
@@ -106,12 +113,7 @@ requests.urllib3.disable_warnings()
 
 if __name__ == "__main__":
 
-    default_login = "admin"
-    l = str(input(f"Login ({default_login}):\t") or default_login)
-    p = getpass.getpass()
-    # auth_url = config['lime']['auth_url']
-    auth_url = 'http://192.168.189.52:19081/PineryLime/SecurityTokenService/identity/connect/token'
-    print(get_token_v2(auth_url, l, p))
+    print(get_token('lime'))
 
 
 

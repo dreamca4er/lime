@@ -6,6 +6,7 @@ import PyQt5.QtCore as Qcore
 from sys import exit
 
 import design
+import borneo
 import borneo.db as db
 import borneo.api as bapi
 
@@ -52,13 +53,20 @@ class CollectionChanges(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.redistribute_btn.clicked.connect(lambda: self.redistribution())
         self.new_portfolio_btn.clicked.connect(lambda: self.new_portfolio())
         reconnect_menu = self.menu.addMenu("Проекты")
-        try:
-            with open(CONFIG_PATH, 'r') as f:
-                self.config = json.load(f)
-        except FileNotFoundError:
-            self.show_error(f"Не найден файл {CONFIG_PATH}")
-        except json.JSONDecodeError:
-            self.show_error(f"Invalid {CONFIG_PATH} file")
+        if borneo.global_config is not None:
+            self.config = borneo.global_config
+            self.show_info(f"Использую глобальный конфиг файл {borneo.config_path}")
+        else:
+            self.show_warning(f"Не удается использовать глобальный конфиг файл {borneo.config_path}"
+                              f", использую {CONFIG_PATH}")
+            try:
+                with open(CONFIG_PATH, 'r') as f:
+                    self.config = json.load(f)
+            except FileNotFoundError:
+                self.show_error(f"Не найден файл {CONFIG_PATH} и не удается использовать глобальный "
+                                f"конфиг файл {borneo.config_path}, завершаю работу")
+            except json.JSONDecodeError:
+                self.show_error(f"{CONFIG_PATH} содержит невалидный JSON, завершаю работу")
         # Отображаем только те проекты, в которых заполнены все нужные конфиги
         options_list = ['server', 'database', 'auth_url', 'api_url', 'uid', 'pwd', 'admin_login', 'admin_pass']
         if len(sys.argv) > 1:
@@ -245,7 +253,7 @@ class CollectionChanges(QtWidgets.QMainWindow, design.Ui_MainWindow):
 
     @check_for_errors
     def refresh_users_lists(self):
-        self.users = db.get_all_users(self.cursor, self.cur_project)
+        self.users = db.get_all_users(self.cursor)
         for user in self.users:
             if 'client' in str(user.Roles or '').split(',') and user.Is_Enabled is None:
                 self.show_error(f"Юзер {user.UserId} по имени {user.Name} получил Sts.users.Username = {user.Username} "
@@ -377,7 +385,11 @@ class CollectionChanges(QtWidgets.QMainWindow, design.Ui_MainWindow):
     def get_token(self):
         try:
             self.token_btn.setDisabled(True)
-            self.api_token = bapi.get_token(self.auth_url, self.admin_login, self.admin_pass)
+            if borneo.global_config:
+                api_param = self.cur_project
+            else:
+                api_param = self.config[self.cur_project]
+            self.api_token = bapi.get_token_v2(api_param)
             self.show_info("Авторизация прошла успешно")
         except Exception as e:
             self.show_error(str(e), True)

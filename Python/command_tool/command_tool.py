@@ -11,7 +11,6 @@ import borneo.db as db
 p_join = os.path.join
 pathname = os.path.dirname(sys.argv[0])
 script_path = os.path.abspath(pathname)
-config_path = os.path.join(script_path, 'connect_config.json')
 command_types_path = os.path.join(script_path, 'command_types.json')
 command_template_path = os.path.join(script_path, 'command_template.sql')
 existing_operations_path = os.path.join(script_path, 'existing_operations.sql')
@@ -133,11 +132,7 @@ class CommandTool(QtWidgets.QMainWindow, design.Ui_MainWindow):
         self.gen_paste.setContext(Qt.WidgetShortcut)
         self.cur_paste.setContext(Qt.WidgetShortcut)
         reconnect_menu = self.menu.addMenu("Проекты")
-        with open(config_path, 'r') as f:
-            try:
-                self.config = json.load(f)
-            except:
-                Messages.show_error("Invalid connect_config.json file")
+        self.config = db.global_config
         with open(command_types_path, 'r') as f:
             try:
                 self.command_types = json.load(f)
